@@ -15,9 +15,9 @@ app.post('/login', (req, res) => {
      */
     //console.log(data);
     if (data.username == "admin" && data.password == "1234" && data.token == "5555")
-        res.send({"Status": "OK"});
+        res.status(200).send({"Status": "OK"});
     else
-        res.send({"Status": "Fail"});
+        res.status(401).send({"Status": "Fail"});
 })
 app.listen(3000, () => {
     console.log('app listening on port 3000!')
