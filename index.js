@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require("cors");
 const app = express();
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 app.use(cors());
 app.use(express.json());
@@ -61,15 +62,13 @@ app.post('/createaccount', async (req, res) => {
 
         // ตรวจสอบว่ามี email ซ้ำในระบบหรือไม่
         const emailCheckQuery = 'SELECT username FROM fm_user WHERE username = $1 AND customer_code = $2';
-        const emailCheckResult = await client.query(emailCheckQuery, [data.email, data.customerCode]);
+        const emailCheckResult = await client.query(emailCheckQuery, [data.email, data.customerCode.toUpperCase()]);
         if (emailCheckResult.rows.length > 0) {
             return res.status(400).json({ Status: "Error", message: "Email already exists" });
         }
 
         // เข้ารหัส (Hash) รหัสผ่าน
-        const bcrypt = require('bcrypt');
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(data.password, saltRounds);
+        const hashedPassword = crypto.scryptSync(password, data.customerCode.toUpperCase(), 64).toString('hex'); // แฮชรหัสผ่าน
 
         // บันทึกข้อมูลลงฐานข้อมูล
         const insertQuery = `
