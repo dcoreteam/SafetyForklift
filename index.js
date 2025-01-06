@@ -103,7 +103,7 @@ app.post('/createcompany', async (req, res) => {
     if (result.rows > 0) {
         result.status(401).json({Status: "Error"});
     } else {
-        const result = await client.query('INSERT INTO fm_company(name, address, contact_person, contact_phone, contact_email, create_at, update_at, company_code) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+        const result = await client.query('INSERT INTO fm_company(name, address, contact_person, contact_phone, contact_email, create_at, update_at, customer_code) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
             [data.name, data.address, data.contactPerson, data.contactPhone, data.contactEmail, new Date(), new Date(), generateUID()]
         )
     }
