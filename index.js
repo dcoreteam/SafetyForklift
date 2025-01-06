@@ -60,7 +60,7 @@ app.post('/createaccount', async (req, res) => {
         }
 
         // ตรวจสอบว่ามี email ซ้ำในระบบหรือไม่
-        const emailCheckQuery = 'SELECT username FROM tm_user WHERE username = $1 AND customer_code = $2';
+        const emailCheckQuery = 'SELECT username FROM fm_user WHERE username = $1 AND customer_code = $2';
         const emailCheckResult = await client.query(emailCheckQuery, [data.email, data.customerCode]);
         if (emailCheckResult.rows.length > 0) {
             return res.status(400).json({ Status: "Error", message: "Email already exists" });
@@ -73,7 +73,7 @@ app.post('/createaccount', async (req, res) => {
 
         // บันทึกข้อมูลลงฐานข้อมูล
         const insertQuery = `
-            INSERT INTO tm_user (username, password_hash, customer_code, create_at, update_at, status)
+            INSERT INTO fm_user (username, password_hash, customer_code, create_at, update_at, status)
             VALUES ($1, $2, $3, $4, $5, 1) RETURNING id
         `;
         const insertResult = await client.query(insertQuery, [data.email, hashedPassword, data.customerCode, new Date(), new Date()]);
