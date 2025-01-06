@@ -72,8 +72,8 @@ app.post('/createaccount', async (req, res) => {
 
         // บันทึกข้อมูลลงฐานข้อมูล
         const insertQuery = `
-            INSERT INTO fm_user (username, password_hash, customer_code, create_at, update_at, status)
-            VALUES ($1, $2, $3, $4, $5, 1) RETURNING id
+            INSERT INTO fm_user (username, email, password_hash, customer_code, create_at, update_at, status)
+            VALUES ($1, $1, $2, $3, $4, $5, 1) RETURNING id
         `;
         const insertResult = await client.query(insertQuery, [data.email, hashedPassword, data.customerCode, new Date(), new Date()]);
 
