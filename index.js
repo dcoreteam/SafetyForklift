@@ -68,7 +68,7 @@ app.post('/createaccount', async (req, res) => {
         }
 
         // เข้ารหัส (Hash) รหัสผ่าน
-        const hashedPassword = crypto.scryptSync(password, data.customerCode.toUpperCase(), 64).toString('hex'); // แฮชรหัสผ่าน
+        const hashedPassword = crypto.scryptSync(data.password, data.customerCode.toUpperCase(), 64).toString('hex'); // แฮชรหัสผ่าน
 
         // บันทึกข้อมูลลงฐานข้อมูล
         const insertQuery = `
