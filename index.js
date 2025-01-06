@@ -56,14 +56,14 @@ app.post('/createaccount', async (req, res) => {
 
         // ตรวจสอบว่า request body ครบถ้วน
         if (!data.email || !data.password || !data.customerCode) {
-            return res.status(400).json({ Status: "Error", Detail: "Missing required fields" });
+            return res.status(400).json({ Status: "Error", message: "Missing required fields" });
         }
 
         // ตรวจสอบว่ามี email ซ้ำในระบบหรือไม่
-        const emailCheckQuery = 'SELECT username FROM tm_user WHERE username = $1';
-        const emailCheckResult = await client.query(emailCheckQuery, [data.email]);
+        const emailCheckQuery = 'SELECT username FROM tm_user WHERE username = $1 AND customer_code = $2';
+        const emailCheckResult = await client.query(emailCheckQuery, [data.email, data.customerCode]);
         if (emailCheckResult.rows.length > 0) {
-            return res.status(400).json({ Status: "Error", Detail: "Email already exists" });
+            return res.status(400).json({ Status: "Error", message: "Email already exists" });
         }
 
         // เข้ารหัส (Hash) รหัสผ่าน
@@ -73,16 +73,16 @@ app.post('/createaccount', async (req, res) => {
 
         // บันทึกข้อมูลลงฐานข้อมูล
         const insertQuery = `
-            INSERT INTO users (username, password_hash, customer_code)
-            VALUES ($1, $2, $3) RETURNING id
+            INSERT INTO tm_user (username, password_hash, customer_code, create_at, update_at, status)
+            VALUES ($1, $2, $3, $4, $5, 1) RETURNING id
         `;
-        const insertResult = await client.query(insertQuery, [data.email, hashedPassword, data.customerCode]);
+        const insertResult = await client.query(insertQuery, [data.email, hashedPassword, data.customerCode, new Date(), new Date()]);
 
         // ส่งผลลัพธ์กลับ
-        res.status(201).json({ message: "Account created successfully", userId: insertResult.rows[0].id });
+        res.status(201).json({Status: "OK", message: "Account created successfully", userId: insertResult.rows[0].id });
     } catch (error) {
         console.error('Error creating account:', error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({Status: "Error", message: "Internal server error" });
     } finally {
         // ปล่อยการเชื่อมต่อฐานข้อมูล
         const client = await pool.connect().catch(() => null); // ป้องกัน client ไม่มีในกรณี error ก่อน client ถูกประกาศ
