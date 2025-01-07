@@ -42,52 +42,96 @@ app.post('/login', async (req, res) => {
 
 app.post('/createaccount', async (req, res) => {
     let data = req.body;
-    /*
-    data json format
-    {
-        "email": "admin@mail.com",
-        "password": "1234",
-        "customerCode":"0987654321"
-    }
-    */
 
     try {
-        // เชื่อมต่อกับฐานข้อมูล
         const client = await pool.connect();
 
-        // ตรวจสอบว่า request body ครบถ้วน
         if (!data.email || !data.password || !data.customerCode) {
             return res.status(400).json({ Status: "Error", message: "Missing required fields" });
         }
 
-        // ตรวจสอบว่ามี email ซ้ำในระบบหรือไม่
-        const emailCheckQuery = 'SELECT username FROM fm_user WHERE username = $1 AND customer_code = $2';
+        // Check for duplicate email that is not deleted
+        const emailCheckQuery = `
+            SELECT username 
+            FROM fm_user 
+            WHERE username = $1 
+              AND customer_code = $2 
+              AND deleted_at IS NULL
+        `;
         const emailCheckResult = await client.query(emailCheckQuery, [data.email, data.customerCode.toUpperCase()]);
         if (emailCheckResult.rows.length > 0) {
             return res.status(400).json({ Status: "Error", message: "Email already exists" });
         }
 
-        // เข้ารหัส (Hash) รหัสผ่าน
-        const hashedPassword = crypto.scryptSync(data.password, data.customerCode.toUpperCase(), 64).toString('hex'); // แฮชรหัสผ่าน
+        // Hash the password
+        const hashedPassword = crypto.scryptSync(data.password, data.customerCode.toUpperCase(), 64).toString('hex');
 
-        // บันทึกข้อมูลลงฐานข้อมูล
+        // Insert into database
         const insertQuery = `
             INSERT INTO fm_user (username, email, password_hash, customer_code, create_at, update_at, status)
             VALUES ($1, $1, $2, $3, $4, $5, 1) RETURNING id
         `;
         const insertResult = await client.query(insertQuery, [data.email, hashedPassword, data.customerCode, new Date(), new Date()]);
 
-        // ส่งผลลัพธ์กลับ
-        res.status(201).json({Status: "OK", message: "Account created successfully", userId: insertResult.rows[0].id });
+        res.status(201).json({ Status: "OK", message: "Account created successfully", userId: insertResult.rows[0].id });
     } catch (error) {
         console.error('Error creating account:', error);
-        res.status(500).json({Status: "Error", message: "Internal server error" });
+        res.status(500).json({ Status: "Error", message: "Internal server error" });
     } finally {
-        // ปล่อยการเชื่อมต่อฐานข้อมูล
-        const client = await pool.connect().catch(() => null); // ป้องกัน client ไม่มีในกรณี error ก่อน client ถูกประกาศ
+        const client = await pool.connect().catch(() => null);
         client?.release();
     }
-})
+});
+
+app.post('/deleteaccount', async (req, res) => {
+    let data = req.body;
+
+    /*
+    data json format
+    {
+        "email": "admin@mail.com",
+        "customerCode":"0987654321"
+    }
+    */
+
+    try {
+        const client = await pool.connect();
+
+        if (!data.email || !data.customerCode) {
+            return res.status(400).json({ Status: "Error", message: "Missing required fields" });
+        }
+
+        // Check if account exists and is not already deleted
+        const checkQuery = `
+            SELECT id 
+            FROM fm_user 
+            WHERE username = $1 
+              AND customer_code = $2 
+              AND deleted_at IS NULL
+        `;
+        const checkResult = await client.query(checkQuery, [data.email, data.customerCode.toUpperCase()]);
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ Status: "Error", message: "Account not found or already deleted" });
+        }
+
+        // Perform soft delete
+        const deleteQuery = `
+            UPDATE fm_user 
+            SET deleted_at = $1, status = 0 
+            WHERE username = $2 
+              AND customer_code = $3
+        `;
+        await client.query(deleteQuery, [new Date(), data.email, data.customerCode.toUpperCase()]);
+
+        res.status(200).json({ Status: "OK", message: "Account deleted successfully" });
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).json({ Status: "Error", message: "Internal server error" });
+    } finally {
+        const client = await pool.connect().catch(() => null);
+        client?.release();
+    }
+});
 
 function generateUID() {
     return uuidv4().replace(/-/g, '').toUpperCase().slice(0, 10); // ตัดให้เหลือ 10 ตัว
