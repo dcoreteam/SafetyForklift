@@ -250,7 +250,7 @@ app.post('/deletecompany', async (req, res) => {
     try {
         // Check if the company exists and is not already deleted
         const result = await client.query(
-            'SELECT id FROM fm_company WHERE name = $1 AND deleted_at IS NULL',
+            'SELECT company_id FROM company WHERE company_name = $1 AND deleted_at IS NULL',
             [data.name]
         );
 
@@ -260,7 +260,7 @@ app.post('/deletecompany', async (req, res) => {
 
         // Soft delete the company
         await client.query(
-            'UPDATE fm_company SET deleted_at = $1 WHERE name = $2',
+            'UPDATE company SET deleted_at = $1 WHERE company_name = $2 AND deleted_at IS NULL',
             [new Date(), data.name]
         );
 
