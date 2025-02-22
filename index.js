@@ -339,8 +339,8 @@ app.post('/updatecompany', async (req, res) => {
         // Execute update query
         const updateQuery = `
             UPDATE company 
-            SET ${updates.join(', ')}, updated_at = $${index}
-            WHERE company_name = $${index + 1} AND deleted_at IS NULL
+            SET ${updates.join(', ')}, updated_at = $${index + 1}
+            WHERE company_name = $${index} AND deleted_at IS NULL
         `;
         await client.query(updateQuery, [...updateValues, new Date()]);
 
