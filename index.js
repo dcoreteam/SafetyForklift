@@ -373,7 +373,7 @@ app.post('/shiftin', async (req, res) => {
             left join staff s on c.assigned_staff_id = s.id
             left join fleet f on s.company_id = f.company_id
             left join company c2 on s.company_id = c2.id
-            where c.uid = $1 and f.device_id = $2'
+            where c.uid = $1 and f.device_id = $2
             and c.deleted_at is null and s.deleted_at is null and c2.deleted_at  is null`,
             [data.cardID, data.deviceID]
         );
