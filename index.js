@@ -213,7 +213,7 @@ app.post('/createcompany', async (req, res) => {
 
         // Insert a new company
         const insertResult = await client.query(
-            'INSERT INTO fm_company (company_name, address, contact_person, contact_phone, contact_email, created_at, updated_at, customer_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            'INSERT INTO company (company_name, address, contact_person, contact_phone, contact_email, created_at, updated_at, customer_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
             [
                 data.name,
                 data.address,
