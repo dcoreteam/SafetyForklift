@@ -351,6 +351,53 @@ app.post('/updatecompany', async (req, res) => {
     }
 });
 
+app.post('/checkin', async (req, res) => {
+    let data = req.body;
+
+    /*
+    data json format:
+    {
+        "cardID":"046678C2616080",
+        "deviceID":"123456"
+    }
+    */
+
+    const client = await pool.connect();
+
+    try {
+        // Check if the company exists and is not deleted
+        const result = await client.query(`
+            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, c2."name" company_name, c.uid
+            from card c
+            left join staff s on c.assigned_staff_id = s.id
+            left join fleet f on s.company_id = f.company_id
+            left join company c2 on s.company_id = c2.id
+            where c.uid = $1 and f.device_id = $2
+            and c.deleted_at is null and s.deleted_at is null and c2.deleted_at  is null`,
+            [data.cardID, data.deviceID]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ Status: "Error", message: "cardID and deviceID not match." });
+        }
+
+        res.status(201).json({ 
+            Status: "OK", 
+            message: "Checked in successfully", 
+            name: result.rows[0].name,
+            jobTitle: result.rows[0].job_title,
+            companyName: result.rows[0].company_name,
+            staffId: result.rows[0].staff_id,
+            cardID: result.rows[0].uid
+        });
+    } catch (error) {
+        console.error('Error shift in:', error);
+        res.status(500).json({ Status: "Error", message: "Internal server error" });
+    } finally {
+        client.release();
+    }
+});
+
 app.post('/shiftin', async (req, res) => {
     let data = req.body;
 
