@@ -382,6 +382,8 @@ app.post('/shiftin', async (req, res) => {
             return res.status(404).json({ Status: "Error", message: "cardID and deviceID not match." });
         }
 
+        console.log(result.rows[0]);
+
         // Execute update query
         // Insert a new company
         const insertResult = await client.query(
