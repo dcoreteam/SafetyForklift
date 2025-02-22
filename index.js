@@ -417,7 +417,7 @@ app.get("/getimage/:staffId", async (req, res) => {
     const client = await pool.connect();
     const result = await client.query(`
         select image
-        from card staff
+        from staff
         where id = $1 and deleted_at is null`,
         [staff_id]
     );
