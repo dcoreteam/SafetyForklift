@@ -353,6 +353,6 @@ app.post('/updatecompany', async (req, res) => {
     }
 });
 
-app.listen(3000, () => {
-    console.log('app listening on port', 3000)
+app.listen(8080, () => {
+    console.log('app listening on port', 8080)
 })
