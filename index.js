@@ -203,7 +203,7 @@ app.post('/createcompany', async (req, res) => {
     try {
         // Check if the company already exists and is not deleted
         const result = await client.query(
-            'SELECT * FROM company WHERE name = $1 AND deleted_at IS NULL',
+            'SELECT * FROM company WHERE company_name = $1 AND deleted_at IS NULL',
             [data.name]
         );
 
@@ -213,7 +213,7 @@ app.post('/createcompany', async (req, res) => {
 
         // Insert a new company
         const insertResult = await client.query(
-            'INSERT INTO fm_company (name, address, contact_person, contact_phone, contact_email, created_at, updated_at, customer_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            'INSERT INTO fm_company (company_name, address, contact_person, contact_phone, contact_email, created_at, updated_at, customer_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
             [
                 data.name,
                 data.address,
@@ -226,7 +226,7 @@ app.post('/createcompany', async (req, res) => {
             ]
         );
 
-        res.status(201).json({ Status: "OK", message: "Company created successfully", companyId: insertResult.rows[0].id });
+        res.status(201).json({ Status: "OK", message: "Company created successfully", companyId: insertResult.rows[0].company_id });
     } catch (error) {
         console.error('Error creating company:', error);
         res.status(500).json({ Status: "Error", message: "Internal server error" });
