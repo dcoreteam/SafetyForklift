@@ -368,7 +368,7 @@ app.post('/shiftin', async (req, res) => {
     try {
         // Check if the company exists and is not deleted
         const result = await client.query(`
-            select s."name", s.job_title, c2."name", encode(s.image, 'base64') image, c.uid
+            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, c2."name", encode(s.image, 'base64') image, c.uid
             from card c
             left join staff s on c.assigned_staff_id = s.id
             left join fleet f on s.company_id = f.company_id
@@ -381,8 +381,6 @@ app.post('/shiftin', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ Status: "Error", message: "cardID and deviceID not match." });
         }
-
-        console.log(result.rows[0]);
 
         // Execute update query
         // Insert a new company
