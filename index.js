@@ -426,11 +426,11 @@ app.get("/getimage/:staffId", async (req, res) => {
         return res.status(404).json({ Status: "Error", message: "Image not found." });
     }
 
-    result.writeHead(200, {
+    res.writeHead(200, {
         "Content-Type": "image/jpg",
         "Content-Length": result.rows[0].image.length
     })
-    result.end(result.rows[0].image)
+    res.end(result.rows[0].image)
     return
 })
 
