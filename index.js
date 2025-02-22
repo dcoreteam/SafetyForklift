@@ -14,7 +14,7 @@ const pool = new Pool({
 	password: 'qwer1234',
 	host: '203.154.32.219',
 	port: '5432',
-	database: 'fleet',
+	database: 'fm',
     idleTimeoutMillis: 30000
 });
 
@@ -203,7 +203,7 @@ app.post('/createcompany', async (req, res) => {
     try {
         // Check if the company already exists and is not deleted
         const result = await client.query(
-            'SELECT * FROM company WHERE company_name = $1 AND deleted_at IS NULL',
+            'SELECT * FROM company WHERE name = $1 AND deleted_at IS NULL',
             [data.name]
         );
 
@@ -213,20 +213,18 @@ app.post('/createcompany', async (req, res) => {
 
         // Insert a new company
         const insertResult = await client.query(
-            'INSERT INTO company (company_name, address, contact_person, contact_phone, contact_email, created_at, updated_at, customer_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING company_id',
+            'INSERT INTO company (name, address, contact_person, contact_phone, contact_email, customer_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
             [
                 data.name,
                 data.address,
                 data.contactPerson,
                 data.contactPhone,
                 data.contactEmail,
-                new Date(),
-                new Date(),
                 generateUID()
             ]
         );
 
-        res.status(201).json({ Status: "OK", message: "Company created successfully", companyId: insertResult.rows[0].company_id });
+        res.status(201).json({ Status: "OK", message: "Company created successfully", companyId: insertResult.rows[0].id });
     } catch (error) {
         console.error('Error creating company:', error);
         res.status(500).json({ Status: "Error", message: "Internal server error" });
@@ -250,7 +248,7 @@ app.post('/deletecompany', async (req, res) => {
     try {
         // Check if the company exists and is not already deleted
         const result = await client.query(
-            'SELECT company_id FROM company WHERE company_name = $1 AND deleted_at IS NULL',
+            'SELECT id FROM company WHERE name = $1 AND deleted_at IS NULL',
             [data.name]
         );
 
@@ -260,7 +258,7 @@ app.post('/deletecompany', async (req, res) => {
 
         // Soft delete the company
         await client.query(
-            'UPDATE company SET deleted_at = $1 WHERE company_name = $2 AND deleted_at IS NULL',
+            'UPDATE company SET deleted_at = $1 WHERE name = $2 AND deleted_at IS NULL',
             [new Date(), data.name]
         );
 
