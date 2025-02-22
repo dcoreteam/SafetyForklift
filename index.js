@@ -42,9 +42,10 @@ app.post('/login', async (req, res) => {
 
 app.post('/createaccount', async (req, res) => {
     let data = req.body;
+    const client = await pool.connect();
 
     try {
-        const client = await pool.connect();
+        
 
         if (!data.email || !data.password || !data.customerCode) {
             return res.status(400).json({ Status: "Error", message: "Missing required fields" });
@@ -78,8 +79,7 @@ app.post('/createaccount', async (req, res) => {
         console.error('Error creating account:', error);
         res.status(500).json({ Status: "Error", message: "Internal server error" });
     } finally {
-        const client = await pool.connect().catch(() => null);
-        client?.release();
+        client.release();
     }
 });
 
@@ -94,8 +94,10 @@ app.post('/deleteaccount', async (req, res) => {
     }
     */
 
+    const client = await pool.connect();
+
     try {
-        const client = await pool.connect();
+        
 
         if (!data.email || !data.customerCode) {
             return res.status(400).json({ Status: "Error", message: "Missing required fields" });
@@ -128,8 +130,7 @@ app.post('/deleteaccount', async (req, res) => {
         console.error('Error deleting account:', error);
         res.status(500).json({ Status: "Error", message: "Internal server error" });
     } finally {
-        const client = await pool.connect().catch(() => null);
-        client?.release();
+        client.release();
     }
 });
 
@@ -144,9 +145,10 @@ app.post('/updateaccount', async (req, res) => {
         "newPassword": "new_password" // Required for updating the password
     }
     */
+    const client = await pool.connect();
 
     try {
-        const client = await pool.connect();
+        
 
         // Validate required fields
         if (!data.username || !data.customerCode || !data.newPassword) {
@@ -185,8 +187,7 @@ app.post('/updateaccount', async (req, res) => {
         console.error('Error updating password:', error);
         res.status(500).json({ Status: "Error", message: "Internal server error" });
     } finally {
-        const client = await pool.connect().catch(() => null);
-        client?.release();
+        client.release();
     }
 });
 
