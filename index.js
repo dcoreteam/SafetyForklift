@@ -351,6 +351,58 @@ app.post('/updatecompany', async (req, res) => {
     }
 });
 
+app.post('/shiftin', async (req, res) => {
+    let data = req.body;
+
+    /*
+    data json format:
+    {
+        "cardID":"046678C2616080",
+        "deviceID":"123456",
+        "shiftIn":"2025-02-23 01:00"
+    }
+    */
+
+    const client = await pool.connect();
+
+    try {
+        // Check if the company exists and is not deleted
+        const result = await client.query(`
+            select s."name", s.job_title, c2."name", encode(s.image, 'base64') image, c.uid
+            from card c
+            left join staff s on c.assigned_staff_id = s.id
+            left join fleet f on s.company_id = f.company_id
+            left join company c2 on s.company_id = c2.id
+            where c.uid = $1 and f.device_id = $2'
+            and c.deleted_at is null and s.deleted_at is null and c2.deleted_at  is null`,
+            [data.cardID, data.deviceID]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ Status: "Error", message: "cardID and deviceID not match." });
+        }
+
+        // Execute update query
+        // Insert a new company
+        const insertResult = await client.query(
+            'INSERT INTO shift_log (staff_id, card_id, fleet_id, check_in) VALUES ($1, $2, $3, $4) RETURNING id',
+            [
+                result.rows[0].staff_id,
+                result.rows[0].card_id,
+                result.rows[0].fleet_id,
+                data.shiftIn
+            ]
+        );
+
+        res.status(201).json({ Status: "OK", message: "Shift in successfully", shiftId: insertResult.rows[0].id });
+    } catch (error) {
+        console.error('Error shift in:', error);
+        res.status(500).json({ Status: "Error", message: "Internal server error" });
+    } finally {
+        client.release();
+    }
+});
+
 app.listen(8000, () => {
     console.log('app listening on port', 8000)
 })
