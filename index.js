@@ -412,6 +412,49 @@ app.post('/shiftin', async (req, res) => {
     }
 });
 
+app.post('/shiftout', async (req, res) => {
+    let data = req.body;
+
+    /*
+    data json format:
+    {
+        "shiftId": 3,
+        "shiftOut":"2025-02-23 01:00"
+    }
+    */
+
+    const client = await pool.connect();
+
+    try {
+        // Check if the company exists and is not deleted
+        const result = await client.query(`
+            select *
+            from shift_log
+            where id = $1 and check_out is null`,
+            [data.shiftId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ Status: "Error", message: "Shift not found." });
+        }
+
+        // Execute update query
+        const updateQuery = `
+            UPDATE shift_log 
+            SET check_out = $1, updated_at = $2
+            WHERE id = $3 AND deleted_at IS NULL
+        `;
+        await client.query(updateQuery, [data.shiftOut, new Date(), data.shiftId]);
+
+        res.status(200).json({ Status: "OK", message: "Shift out successfully" });
+    } catch (error) {
+        console.error('Error shift in:', error);
+        res.status(500).json({ Status: "Error", message: "Internal server error" });
+    } finally {
+        client.release();
+    }
+});
+
 app.get("/getimage/:staffId", async (req, res) => {
     const staff_id = req.params.staffId;
     const client = await pool.connect();
