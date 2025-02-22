@@ -292,7 +292,7 @@ app.post('/updatecompany', async (req, res) => {
     try {
         // Check if the company exists and is not deleted
         const result = await client.query(
-            'SELECT id FROM fm_company WHERE name = $1 AND deleted_at IS NULL',
+            'SELECT company_id FROM company WHERE company_name = $1 AND deleted_at IS NULL',
             [data.name]
         );
 
@@ -338,9 +338,9 @@ app.post('/updatecompany', async (req, res) => {
 
         // Execute update query
         const updateQuery = `
-            UPDATE fm_company 
-            SET ${updates.join(', ')}, update_at = $${index}
-            WHERE name = $${index + 1}
+            UPDATE company 
+            SET ${updates.join(', ')}, updated_at = $${index}
+            WHERE company_name = $${index + 1} AND deleted_at IS NULL
         `;
         await client.query(updateQuery, [...updateValues, new Date()]);
 
