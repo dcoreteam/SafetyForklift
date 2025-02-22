@@ -381,7 +381,7 @@ app.post('/checkin', async (req, res) => {
             return res.status(404).json({ Status: "Error", message: "cardID and deviceID not match." });
         }
 
-        res.status(201).json({ 
+        res.status(200).json({ 
             Status: "OK", 
             message: "Checked in successfully", 
             name: result.rows[0].name,
