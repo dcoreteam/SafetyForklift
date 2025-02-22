@@ -203,7 +203,7 @@ app.post('/createcompany', async (req, res) => {
     try {
         // Check if the company already exists and is not deleted
         const result = await client.query(
-            'SELECT * FROM fm_company WHERE name = $1 AND deleted_at IS NULL',
+            'SELECT * FROM company WHERE name = $1 AND deleted_at IS NULL',
             [data.name]
         );
 
@@ -213,7 +213,7 @@ app.post('/createcompany', async (req, res) => {
 
         // Insert a new company
         const insertResult = await client.query(
-            'INSERT INTO fm_company (name, address, contact_person, contact_phone, contact_email, create_at, update_at, customer_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            'INSERT INTO fm_company (name, address, contact_person, contact_phone, contact_email, created_at, updated_at, customer_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
             [
                 data.name,
                 data.address,
