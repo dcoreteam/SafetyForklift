@@ -368,7 +368,7 @@ app.post('/shiftin', async (req, res) => {
     try {
         // Check if the company exists and is not deleted
         const result = await client.query(`
-            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, c2."name" company_name, encode(s.image, 'base64') image, c.uid
+            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, c2."name" company_name, c.uid
             from card c
             left join staff s on c.assigned_staff_id = s.id
             left join fleet f on s.company_id = f.company_id
@@ -401,7 +401,7 @@ app.post('/shiftin', async (req, res) => {
             name: result.rows[0].name,
             jobTitle: result.rows[0].job_title,
             companyName: result.rows[0].company_name,
-            image: result.rows[0].image,
+            staffId: result.rows[0].staff_id,
             cardID: result.rows[0].uid
         });
     } catch (error) {
@@ -411,6 +411,28 @@ app.post('/shiftin', async (req, res) => {
         client.release();
     }
 });
+
+app.get("/getimage/:staffId", async (req, res) => {
+    const staff_id = req.params.staffId;
+    const client = await pool.connect();
+    const result = await client.query(`
+        select image
+        from card staff
+        where id = $1 and deleted_at is null`,
+        [staff_id]
+    );
+
+    if (result.rows.length === 0) {
+        return res.status(404).json({ Status: "Error", message: "Image not found." });
+    }
+
+    result.writeHead(200, {
+        "Content-Type": "image/jpg",
+        "Content-Length": result.rows[0].image.length
+    })
+    result.end(result.rows[0].image)
+    return
+})
 
 app.listen(8000, () => {
     console.log('app listening on port', 8000)
