@@ -524,6 +524,53 @@ app.get("/getimage/:staffId", async (req, res) => {
     return
 })
 
+app.post('/getDeviceInfo', async (req, res) => {
+    let data = req.body;
+
+    /*
+    data json format:
+    {
+        "deviceID":"123456"
+    }
+    */
+
+    const client = await pool.connect();
+
+    try {
+        // Check if the company exists and is not deleted
+        const result = await client.query(`
+            select f.id, f.vehicle_name, f.vehicle_type, f.vehicle_status, f.make, f.model. f.year, c.name company_name
+            from fleet f
+            left join company c on f.company_id = c.id
+            where f.device_id = $1
+            and f.deleted_at is null and c.deleted_at is null`,
+            [data.deviceID]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ Status: "Error", message: "deviceID not match." });
+        }
+
+        res.status(200).json({ 
+            Status: "OK", 
+            message: "Get device info successfully", 
+            vehicleName: result.rows[0].vehicle_name,
+            vehicleType: result.rows[0].vehicle_type,
+            vehicleStatus: result.rows[0].vehicle_status,
+            make: result.rows[0].make,
+            model: result.rows[0].model,
+            year: result.rows[0].year,
+            companyName: result.rows[0].company_name,
+            fleetID: result.rows[0].id
+        });
+    } catch (error) {
+        console.error('Error get device info:', error);
+        res.status(500).json({ Status: "Error", message: "Internal server error" });
+    } finally {
+        client.release();
+    }
+});
+
 app.listen(8000, () => {
     console.log('app listening on port', 8000)
 })
