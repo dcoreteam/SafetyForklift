@@ -367,7 +367,7 @@ app.post('/checkin', async (req, res) => {
     try {
         // Check if the company exists and is not deleted
         const result = await client.query(`
-            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, c2."name" company_name, c.uid
+            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, s.company_code, c2."name" company_name, c.uid
             from card c
             left join staff s on c.assigned_staff_id = s.id
             left join fleet f on s.company_id = f.company_id
@@ -386,6 +386,7 @@ app.post('/checkin', async (req, res) => {
             message: "Checked in successfully", 
             name: result.rows[0].name,
             jobTitle: result.rows[0].job_title,
+            companyCode: result.rows[0].company_code,
             companyName: result.rows[0].company_name,
             staffId: result.rows[0].staff_id,
             cardID: result.rows[0].uid
@@ -415,7 +416,7 @@ app.post('/shiftin', async (req, res) => {
     try {
         // Check if the company exists and is not deleted
         const result = await client.query(`
-            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, c2."name" company_name, c.uid
+            select s.id staff_id, c.id card_id, f.id fleet_id, s."name", s.job_title, s.company_code, c2."name" company_name, c.uid
             from card c
             left join staff s on c.assigned_staff_id = s.id
             left join fleet f on s.company_id = f.company_id
@@ -447,6 +448,7 @@ app.post('/shiftin', async (req, res) => {
             shiftId: insertResult.rows[0].id,
             name: result.rows[0].name,
             jobTitle: result.rows[0].job_title,
+            companyCode: result.rows[0].company_code,
             companyName: result.rows[0].company_name,
             staffId: result.rows[0].staff_id,
             cardID: result.rows[0].uid
