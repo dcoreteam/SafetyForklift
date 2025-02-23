@@ -521,7 +521,7 @@ app.get("/getimage/:staffId", async (req, res) => {
     }
 
     res.writeHead(200, {
-        "Content-Type": "image/jpg",
+        "Content-Type": "image/jpeg",
         "Content-Length": result.rows[0].image.length
     })
     res.end(result.rows[0].image)
