@@ -539,7 +539,7 @@ app.post('/getDeviceInfo', async (req, res) => {
     try {
         // Check if the company exists and is not deleted
         const result = await client.query(`
-            select f.id, f.vehicle_name, f.vehicle_type, f.vehicle_status, f.make, f.model. f.year, c.name company_name
+            select f.id, f.vehicle_name, f.vehicle_type, f.vehicle_status, f.make, f.model, f.year, c.name company_name
             from fleet f
             left join company c on f.company_id = c.id
             where f.device_id = $1
