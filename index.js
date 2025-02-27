@@ -509,24 +509,34 @@ app.post('/shiftout', async (req, res) => {
 app.get("/getimage/:staffId", async (req, res) => {
     const staff_id = req.params.staffId;
     const client = await pool.connect();
-    const result = await client.query(`
-        select image
-        from staff
-        where id = $1 and deleted_at is null`,
-        [staff_id]
-    );
 
-    if (result.rows.length === 0) {
-        return res.status(404).json({ Status: "Error", message: "Image not found." });
+    try {
+        const result = await client.query(`
+            SELECT image
+            FROM staff
+            WHERE id = $1 AND deleted_at IS NULL`,
+            [staff_id]
+        );
+
+        if (result.rows.length === 0 || !result.rows[0].image) {
+            return res.status(404).json({ Status: "Error", message: "Image not found." });
+        }
+
+        const imageBuffer = result.rows[0].image;
+        
+        res.writeHead(200, {
+            "Content-Type": "image/jpeg", // Change this if needed
+            "Content-Length": imageBuffer.length
+        });
+        res.end(imageBuffer);
+
+    } catch (error) {
+        console.error("Error fetching image:", error);
+        res.status(500).json({ Status: "Error", message: "Internal server error." });
+    } finally {
+        client.release(); // Ensure connection is released
     }
-
-    res.writeHead(200, {
-        "Content-Type": "image/jpeg",
-        "Content-Length": result.rows[0].image.length
-    })
-    res.end(result.rows[0].image)
-    return
-})
+});
 
 app.post('/getDeviceInfo', async (req, res) => {
     let data = req.body;
