@@ -575,6 +575,10 @@ app.post('/getDeviceInfo', async (req, res) => {
     }
 });
 
+app.get("/getTest", async (req, res) => {
+    res.status(200).json({Status:"OK"});
+})
+
 app.listen(8000, () => {
     console.log('app listening on port', 8000)
 })
