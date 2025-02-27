@@ -585,9 +585,51 @@ app.post('/getDeviceInfo', async (req, res) => {
     }
 });
 
+app.post('/registerDevice', async (req, res) => {
+    let data = req.body;
+
+    /*
+    data json format:
+    {
+        "deviceID":"123456"
+    }
+    */
+
+    const client = await pool.connect();
+
+    try {
+        // Check if the company exists and is not deleted
+        const result = await client.query(`
+            select f.id, f.vehicle_name, f.vehicle_type, f.vehicle_status, f.make, f.model, f.year, f.is_registered
+            from fleet f
+            where f.device_id = $1
+            and f.deleted_at is null`,
+            [data.deviceID]
+        );
+
+        if (result.rows.length === 0) {
+            const result = await client.query(`
+                insert into fleet(device_id, is_register) values($1, false)
+                `, [data.deviceID]);
+            return res.status(200).json({ Status: "OK", message: "Register device successfully", is_registered: false });
+        }
+
+        res.status(200).json({ 
+            Status: "OK", 
+            message: "Device allready register", 
+            is_registered: result.rows[0].is_registered
+        });
+    } catch (error) {
+        console.error('Error register device:', error);
+        res.status(500).json({ Status: "Error", message: "Internal server error" });
+    } finally {
+        client.release();
+    }
+});
+
 app.get("/getTest", async (req, res) => {
     res.status(200).json({Status:"OK"});
-})
+});
 
 app.listen(8000, () => {
     console.log('app listening on port', 8000)
