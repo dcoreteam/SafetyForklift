@@ -609,7 +609,7 @@ app.post('/registerDevice', async (req, res) => {
 
         if (result.rows.length === 0) {
             const result = await client.query(`
-                insert into fleet(vehicle_namedevice_id, is_registered) values($1, false)
+                insert into fleet(device_id, is_registered) values($1, false)
                 `, [data.deviceID]);
             return res.status(200).json({ Status: "OK", message: "Register device successfully", is_registered: false });
         }
