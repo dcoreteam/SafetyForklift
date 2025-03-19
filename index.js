@@ -4,6 +4,7 @@ const cors = require("cors");
 const app = express();
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const ExcelJS = require('exceljs');
 
 app.use(cors());
 app.use(express.json());
@@ -658,6 +659,122 @@ app.get('/shifts', async (req, res) => {
         res.status(500).send('Error retrieving shift log data');
     }
   });
+
+// -------------- EXPORT CSV --------------
+app.get('/shifts/export/csv', async (req, res) => {
+    try {
+        // ดึงข้อมูลเหมือนด้านบน
+        const query = `
+        SELECT
+            sl.id AS shift_log_id,
+            st.name AS staff_name,
+            c2.name AS company_name,
+            card.uid AS card_uid,
+            f.vehicle_name AS fleet_name,
+            TO_CHAR(sl.check_in, 'YYYY-MM-DD HH24:MI:SS') AS check_in,
+            TO_CHAR(sl.check_out, 'YYYY-MM-DD HH24:MI:SS') AS check_out
+        FROM shift_log sl
+        JOIN staff st ON sl.staff_id = st.id
+        JOIN company c2 ON st.company_id = c2.id
+        JOIN card ON sl.card_id = card.id
+        JOIN fleet f ON sl.fleet_id = f.id
+        ORDER BY sl.id DESC
+        `;
+        const result = await pool.query(query);
+        const shiftsData = result.rows;
+
+        // กำหนด Header ให้ Browser ดาวน์โหลดไฟล์เป็น CSV
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="shifts.csv"');
+
+        // สร้าง CSV ขึ้นมาเอง (แบบง่าย ๆ)
+        // 1) สร้าง Header
+        let csvContent = 'Shift ID,Staff Name,Company Name,Card UID,Fleet Name,Check In,Check Out\n';
+
+        // 2) Loop ข้อมูล shiftsData เพื่อสร้างแต่ละแถว
+        shiftsData.forEach(shift => {
+        csvContent += [
+            shift.shift_log_id,
+            `"${shift.staff_name}"`,    // ใส่ "" เผื่อมี comma ในชื่อ
+            `"${shift.company_name}"`,
+            shift.card_uid,
+            `"${shift.fleet_name}"`,
+            shift.check_in,
+            shift.check_out
+        ].join(',') + '\n';
+        });
+
+        // 3) ส่ง CSV ออกไป
+        res.send(csvContent);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error exporting CSV');
+    }
+});
+  
+// -------------- EXPORT EXCEL --------------
+app.get('/shifts/export/excel', async (req, res) => {
+    try {
+        // ดึงข้อมูลเหมือนด้านบน
+        const query = `
+        SELECT
+            sl.id AS shift_log_id,
+            st.name AS staff_name,
+            c2.name AS company_name,
+            card.uid AS card_uid,
+            f.vehicle_name AS fleet_name,
+            TO_CHAR(sl.check_in, 'YYYY-MM-DD HH24:MI:SS') AS check_in,
+            TO_CHAR(sl.check_out, 'YYYY-MM-DD HH24:MI:SS') AS check_out
+        FROM shift_log sl
+        JOIN staff st ON sl.staff_id = st.id
+        JOIN company c2 ON st.company_id = c2.id
+        JOIN card ON sl.card_id = card.id
+        JOIN fleet f ON sl.fleet_id = f.id
+        ORDER BY sl.id DESC
+        `;
+        const result = await pool.query(query);
+        const shiftsData = result.rows;
+
+        // สร้างไฟล์ Excel ด้วย exceljs
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Shifts');
+
+        // กำหนดหัวตาราง (Header)
+        worksheet.columns = [
+        { header: 'Shift ID', key: 'shift_log_id', width: 10 },
+        { header: 'Staff Name', key: 'staff_name', width: 20 },
+        { header: 'Company Name', key: 'company_name', width: 20 },
+        { header: 'Card UID', key: 'card_uid', width: 15 },
+        { header: 'Fleet Name', key: 'fleet_name', width: 20 },
+        { header: 'Check In', key: 'check_in', width: 20 },
+        { header: 'Check Out', key: 'check_out', width: 20 },
+        ];
+
+        // ใส่ข้อมูลใน Worksheet
+        shiftsData.forEach(shift => {
+        worksheet.addRow({
+            shift_log_id: shift.shift_log_id,
+            staff_name: shift.staff_name,
+            company_name: shift.company_name,
+            card_uid: shift.card_uid,
+            fleet_name: shift.fleet_name,
+            check_in: shift.check_in,
+            check_out: shift.check_out
+        });
+        });
+
+        // กำหนด Header ให้ Browser ดาวน์โหลดไฟล์เป็น Excel
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="shifts.xlsx"');
+
+        // เขียนไฟล์ Excel ลงใน Stream แล้วส่งกลับไปยัง Client
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error exporting Excel');
+    }
+});
 
 app.listen(8000, () => {
     console.log('app listening on port', 8000)

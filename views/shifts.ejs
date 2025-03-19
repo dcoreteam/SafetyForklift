@@ -20,10 +20,31 @@
       h1 {
         text-align: center;
       }
+      .export-buttons {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .export-buttons a {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 8px 16px;
+        background: #007bff;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .export-buttons a:hover {
+        background: #0056b3;
+      }
     </style>
   </head>
   <body>
     <h1>Shift Log</h1>
+    <div class="export-buttons">
+      <!-- ปุ่ม Export CSV และ Excel -->
+      <a href="/shifts/export/csv">Export CSV</a>
+      <a href="/shifts/export/excel">Export Excel</a>
+    </div>
     <table>
       <thead>
         <tr>
