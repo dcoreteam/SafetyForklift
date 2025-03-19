@@ -635,14 +635,26 @@ app.get("/getTest", async (req, res) => {
 
 app.get('/shifts', async (req, res) => {
     try {
-      // ดึงข้อมูลทั้งหมดจากตาราง shift_log
-      const result = await pool.query('SELECT * FROM shift_log ORDER BY id DESC');
-      // ส่งผลลัพธ์ไปยัง Template 'shifts.ejs'
-      res.render('shifts', { shifts: result.rows });
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('เกิดข้อผิดพลาดในการดึงข้อมูลการเข้ากะ-ออกกะ');
-    }
+        const query = `
+          SELECT
+            sl.id AS shift_log_id,
+            st.name AS staff_name,
+            c.uid AS card_uid,
+            f.vehicle_name AS fleet_name,
+            sl.check_in,
+            sl.check_out
+          FROM shift_log sl
+          JOIN staff st ON sl.staff_id = st.id
+          JOIN card c ON sl.card_id = c.id
+          JOIN fleet f ON sl.fleet_id = f.id
+          ORDER BY sl.id DESC
+        `;
+        const result = await pool.query(query);
+        res.render('shifts', { shifts: result.rows });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send('Error retrieving shift log data');
+      }
   });
 
 app.listen(8000, () => {
