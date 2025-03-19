@@ -24,6 +24,21 @@
   </head>
   <body>
     <h1>Shift Log</h1>
+    <% 
+      function formatDateTime(dateString) {
+        if (!dateString) return ''; // กรณีไม่มีข้อมูล
+
+        const d = new Date(dateString);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      }
+    %>
     <table>
       <tr>
         <th>ID</th>
@@ -39,8 +54,8 @@
         <td><%= shift.staff_id %></td>
         <td><%= shift.card_id %></td>
         <td><%= shift.fleet_id %></td>
-        <td><%= shift.check_in %></td>
-        <td><%= shift.check_out %></td>
+        <td><%= formatDateTime(shift.check_in) %></td>
+        <td><%= formatDateTime(shift.check_out) %></td>
       </tr>
       <% }) %>
     </table>
