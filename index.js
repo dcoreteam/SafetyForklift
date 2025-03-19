@@ -58,11 +58,11 @@ app.post('/createaccount', async (req, res) => {
 
         // 2) ตรวจสอบว่า customerCode นี้มีในตาราง company หรือไม่
         const companyQuery = `
-        SELECT id
-        FROM company
-        WHERE UPPER(customer_code) = UPPER($1)
-          AND deleted_at IS NULL
-      `;
+            SELECT id
+            FROM company
+            WHERE UPPER(customer_code) = UPPER($1)
+                AND deleted_at IS NULL
+        `;
         const companyResult = await client.query(companyQuery, [data.customerCode]);
         if (companyResult.rows.length === 0) {
             return res.status(400).json({
@@ -74,12 +74,12 @@ app.post('/createaccount', async (req, res) => {
 
         // 3) ตรวจสอบว่า email (username) นี้ มีในตาราง users (ภายใต้ company เดียวกัน) หรือไม่
         const emailCheckQuery = `
-        SELECT username
-        FROM users
-        WHERE username = $1
-          AND company_id = $2
-          AND deleted_at IS NULL
-      `;
+            SELECT username
+            FROM users
+            WHERE username = $1
+                AND company_id = $2
+                AND deleted_at IS NULL
+        `;
         const emailCheckResult = await client.query(emailCheckQuery, [data.email, companyId]);
         if (emailCheckResult.rows.length > 0) {
             return res.status(400).json({
@@ -97,16 +97,16 @@ app.post('/createaccount', async (req, res) => {
         //    - ใน schema ใหม่ใช้ฟิลด์ password (ไม่ใช่ password_hash)
         //    - company_id ต้องมาจากตาราง company
         const insertQuery = `
-        INSERT INTO users (
-          username, 
-          password, 
-          company_id, 
-          created_at, 
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id
-      `;
+            INSERT INTO users (
+                username, 
+                password, 
+                company_id, 
+                created_at, 
+                updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
+        `;
         const now = new Date();
         const insertResult = await client.query(insertQuery, [
             data.email,        // username
@@ -135,108 +135,172 @@ app.post('/createaccount', async (req, res) => {
 });
 
 app.post('/deleteaccount', async (req, res) => {
-    let data = req.body;
-
+    const data = req.body;
     /*
-    data json format
-    {
+      data json format
+      {
         "email": "admin@mail.com",
-        "customerCode":"0987654321"
-    }
+        "customerCode": "0987654321"
+      }
     */
 
     const client = await pool.connect();
 
     try {
-
-
+        // 1) ตรวจสอบว่า email และ customerCode ถูกส่งมาหรือไม่
         if (!data.email || !data.customerCode) {
-            return res.status(400).json({ Status: "Error", message: "Missing required fields" });
+            return res.status(400).json({
+                Status: "Error",
+                message: "Missing required fields (email, customerCode)"
+            });
         }
 
-        // Check if account exists and is not already deleted
+        // 2) หา company_id จากตาราง company โดยใช้ customer_code
+        const companyQuery = `
+            SELECT id 
+            FROM company
+            WHERE UPPER(customer_code) = UPPER($1)
+                AND deleted_at IS NULL
+        `;
+        const companyResult = await client.query(companyQuery, [data.customerCode]);
+        if (companyResult.rows.length === 0) {
+            return res.status(404).json({
+                Status: "Error",
+                message: "Company not found or invalid customer code"
+            });
+        }
+        const companyId = companyResult.rows[0].id;
+
+        // 3) ตรวจสอบว่ามี user (users) ที่ username = email + company_id ตรงกัน และยังไม่ถูกลบหรือไม่
         const checkQuery = `
             SELECT id 
-            FROM fm_user 
-            WHERE username = $1 
-              AND customer_code = $2 
-              AND deleted_at IS NULL
+            FROM users
+            WHERE username = $1
+                AND company_id = $2
+                AND deleted_at IS NULL
         `;
-        const checkResult = await client.query(checkQuery, [data.email, data.customerCode.toUpperCase()]);
+        const checkResult = await client.query(checkQuery, [data.email, companyId]);
         if (checkResult.rows.length === 0) {
-            return res.status(404).json({ Status: "Error", message: "Account not found or already deleted" });
+            return res.status(404).json({
+                Status: "Error",
+                message: "Account not found or already deleted"
+            });
         }
 
-        // Perform soft delete
+        // 4) ทำ Soft Delete โดยตั้ง deleted_at = ตอนนี้ และอาจตั้ง status อื่น ๆ ตามต้องการ
         const deleteQuery = `
-            UPDATE fm_user 
-            SET deleted_at = $1, status = 0 
-            WHERE username = $2 
-              AND customer_code = $3
+            UPDATE users
+            SET deleted_at = $1,
+                updated_at = $1
+            WHERE username = $2
+                AND company_id = $3
+                AND deleted_at IS NULL
         `;
-        await client.query(deleteQuery, [new Date(), data.email, data.customerCode.toUpperCase()]);
+        await client.query(deleteQuery, [new Date(), data.email, companyId]);
 
-        res.status(200).json({ Status: "OK", message: "Account deleted successfully" });
+        // 5) ส่งผลลัพธ์กลับ
+        res.status(200).json({
+            Status: "OK",
+            message: "Account deleted successfully"
+        });
+
     } catch (error) {
         console.error('Error deleting account:', error);
-        res.status(500).json({ Status: "Error", message: "Internal server error" });
+        res.status(500).json({
+            Status: "Error",
+            message: "Internal server error"
+        });
     } finally {
         client.release();
     }
 });
 
 app.post('/updateaccount', async (req, res) => {
-    let data = req.body;
-
+    const data = req.body;
     /*
-    data json format
-    {
-        "username": "user123",         // Required for identifying the account
-        "customerCode": "0987654321",  // Required for identifying the account
-        "newPassword": "new_password" // Required for updating the password
-    }
+      data json format
+      {
+        "username": "user123",          // Required for identifying the account
+        "customerCode": "0987654321",   // Required for identifying the account
+        "newPassword": "new_password"   // Required for updating the password
+      }
     */
+
     const client = await pool.connect();
-
     try {
-
-
-        // Validate required fields
+        // 1) ตรวจสอบว่ามี username, customerCode, newPassword ครบหรือไม่
         if (!data.username || !data.customerCode || !data.newPassword) {
-            return res.status(400).json({ Status: "Error", message: "Missing required fields" });
+            return res.status(400).json({
+                Status: "Error",
+                message: "Missing required fields (username, customerCode, newPassword)"
+            });
         }
 
-        // Check if account exists and is not deleted
+        // 2) หา company_id จากตาราง company โดยใช้ customer_code
+        const companyQuery = `
+            SELECT id 
+            FROM company
+            WHERE UPPER(customer_code) = UPPER($1)
+                AND deleted_at IS NULL
+        `;
+        const companyResult = await client.query(companyQuery, [data.customerCode]);
+        if (companyResult.rows.length === 0) {
+            return res.status(404).json({
+                Status: "Error",
+                message: "Company not found or invalid customer code"
+            });
+        }
+        const companyId = companyResult.rows[0].id;
+
+        // 3) ตรวจสอบว่ามี user (users) ที่ username = data.username + company_id ตรงกัน และยังไม่ถูกลบหรือไม่
         const checkQuery = `
             SELECT id 
-            FROM fm_user 
-            WHERE username = $1 
-              AND customer_code = $2 
-              AND deleted_at IS NULL
+            FROM users
+            WHERE username = $1
+                AND company_id = $2
+                AND deleted_at IS NULL
         `;
-        const checkResult = await client.query(checkQuery, [data.username, data.customerCode.toUpperCase()]);
+        const checkResult = await client.query(checkQuery, [data.username, companyId]);
         if (checkResult.rows.length === 0) {
-            return res.status(404).json({ Status: "Error", message: "Account not found or already deleted" });
+            return res.status(404).json({
+                Status: "Error",
+                message: "Account not found or already deleted"
+            });
         }
 
-        // Hash the new password
+        // 4) Hash the new password
+        //    ใช้ customerCode (ตัวพิมพ์ใหญ่) เป็น salt เพื่อเพิ่มความปลอดภัย
+        //    (แนะนำให้ใช้ bcrypt หรือ argon2 ใน production)
+        const salt = data.customerCode.toUpperCase();
         const hashedPassword = crypto
-            .scryptSync(data.newPassword, data.customerCode.toUpperCase(), 64)
+            .scryptSync(data.newPassword, salt, 64)
             .toString('hex');
 
-        // Update password
+        // 5) Update password ลงตาราง users
+        //    - ฟิลด์ password คือที่เก็บรหัสผ่าน (ตาม schema ล่าสุด)
+        //    - อัปเดต updated_at ด้วย
         const updateQuery = `
-            UPDATE fm_user 
-            SET password_hash = $1, update_at = $2
-            WHERE username = $3 
-              AND customer_code = $4
+            UPDATE users
+            SET password = $1,
+                updated_at = NOW()
+            WHERE username = $2
+                AND company_id = $3
+                AND deleted_at IS NULL
         `;
-        await client.query(updateQuery, [hashedPassword, new Date(), data.username, data.customerCode.toUpperCase()]);
+        await client.query(updateQuery, [hashedPassword, data.username, companyId]);
 
-        res.status(200).json({ Status: "OK", message: "Password updated successfully" });
+        // 6) ส่งผลลัพธ์กลับ
+        res.status(200).json({
+            Status: "OK",
+            message: "Password updated successfully"
+        });
+
     } catch (error) {
         console.error('Error updating password:', error);
-        res.status(500).json({ Status: "Error", message: "Internal server error" });
+        res.status(500).json({
+            Status: "Error",
+            message: "Internal server error"
+        });
     } finally {
         client.release();
     }
