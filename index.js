@@ -8,14 +8,14 @@ const ExcelJS = require('exceljs');
 
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
 const pool = new Pool({
-	user: 'palm',
-	password: 'qwer1234',
-	host: '203.154.32.219',
-	port: '5432',
-	database: 'fm',
+    user: 'palm',
+    password: 'qwer1234',
+    host: '203.154.32.219',
+    port: '5432',
+    database: 'fm',
     idleTimeoutMillis: 30000
 });
 
@@ -38,49 +38,97 @@ app.post('/login', async (req, res) => {
         client.release();
     }
     if (data.username == "admin" && data.password == "1234" && data.token == "5555")
-        res.status(200).send({"Status": "OK"});
+        res.status(200).send({ "Status": "OK" });
     else
-        res.status(401).send({"Status": "Fail"});
+        res.status(401).send({ "Status": "Fail" });
 })
 
 app.post('/createaccount', async (req, res) => {
-    let data = req.body;
+    const data = req.body;
     const client = await pool.connect();
 
     try {
-        
-
+        // 1) ตรวจสอบว่ามี email, password, customerCode ครบหรือไม่
         if (!data.email || !data.password || !data.customerCode) {
-            return res.status(400).json({ Status: "Error", message: "Missing required fields" });
+            return res.status(400).json({
+                Status: "Error",
+                message: "Missing required fields (email, password, customerCode)"
+            });
         }
 
-        // Check for duplicate email that is not deleted
+        // 2) ตรวจสอบว่า customerCode นี้มีในตาราง company หรือไม่
+        const companyQuery = `
+        SELECT id
+        FROM company
+        WHERE UPPER(customer_code) = UPPER($1)
+          AND deleted_at IS NULL
+      `;
+        const companyResult = await client.query(companyQuery, [data.customerCode]);
+        if (companyResult.rows.length === 0) {
+            return res.status(400).json({
+                Status: "Error",
+                message: "Invalid customer code or company not found"
+            });
+        }
+        const companyId = companyResult.rows[0].id;
+
+        // 3) ตรวจสอบว่า email (username) นี้ มีในตาราง users (ภายใต้ company เดียวกัน) หรือไม่
         const emailCheckQuery = `
-            SELECT username 
-            FROM fm_user 
-            WHERE username = $1 
-              AND customer_code = $2 
-              AND deleted_at IS NULL
-        `;
-        const emailCheckResult = await client.query(emailCheckQuery, [data.email, data.customerCode.toUpperCase()]);
+        SELECT username
+        FROM users
+        WHERE username = $1
+          AND company_id = $2
+          AND deleted_at IS NULL
+      `;
+        const emailCheckResult = await client.query(emailCheckQuery, [data.email, companyId]);
         if (emailCheckResult.rows.length > 0) {
-            return res.status(400).json({ Status: "Error", message: "Email already exists" });
+            return res.status(400).json({
+                Status: "Error",
+                message: "Email already exists for this company"
+            });
         }
 
-        // Hash the password
-        const hashedPassword = crypto.scryptSync(data.password, data.customerCode.toUpperCase(), 64).toString('hex');
+        // 4) Hash the password
+        //    ใช้ customerCode (ตัวพิมพ์ใหญ่) เป็น salt เพื่อเพิ่มความปลอดภัย
+        const salt = data.customerCode.toUpperCase();
+        const hashedPassword = crypto.scryptSync(data.password, salt, 64).toString('hex');
 
-        // Insert into database
+        // 5) Insert ลงตาราง users
+        //    - ใน schema ใหม่ใช้ฟิลด์ password (ไม่ใช่ password_hash)
+        //    - company_id ต้องมาจากตาราง company
         const insertQuery = `
-            INSERT INTO fm_user (username, email, password_hash, customer_code, create_at, update_at, status)
-            VALUES ($1, $1, $2, $3, $4, $5, 1) RETURNING id
-        `;
-        const insertResult = await client.query(insertQuery, [data.email, hashedPassword, data.customerCode, new Date(), new Date()]);
+        INSERT INTO users (
+          username, 
+          password, 
+          company_id, 
+          created_at, 
+          updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+      `;
+        const now = new Date();
+        const insertResult = await client.query(insertQuery, [
+            data.email,        // username
+            hashedPassword,    // password
+            companyId,         // company_id
+            now,               // created_at
+            now                // updated_at
+        ]);
 
-        res.status(201).json({ Status: "OK", message: "Account created successfully", userId: insertResult.rows[0].id });
+        // 6) ส่งกลับ response
+        res.status(201).json({
+            Status: "OK",
+            message: "Account created successfully",
+            userId: insertResult.rows[0].id
+        });
+
     } catch (error) {
         console.error('Error creating account:', error);
-        res.status(500).json({ Status: "Error", message: "Internal server error" });
+        res.status(500).json({
+            Status: "Error",
+            message: "Internal server error"
+        });
     } finally {
         client.release();
     }
@@ -100,7 +148,7 @@ app.post('/deleteaccount', async (req, res) => {
     const client = await pool.connect();
 
     try {
-        
+
 
         if (!data.email || !data.customerCode) {
             return res.status(400).json({ Status: "Error", message: "Missing required fields" });
@@ -151,7 +199,7 @@ app.post('/updateaccount', async (req, res) => {
     const client = await pool.connect();
 
     try {
-        
+
 
         // Validate required fields
         if (!data.username || !data.customerCode || !data.newPassword) {
@@ -384,9 +432,9 @@ app.post('/checkin', async (req, res) => {
             return res.status(404).json({ Status: "Error", message: `Card ID[${data.cardID}] and device ID[${data.deviceID}] not match.` });
         }
 
-        res.status(200).json({ 
-            Status: "OK", 
-            message: "Checked in successfully", 
+        res.status(200).json({
+            Status: "OK",
+            message: "Checked in successfully",
             name: result.rows[0].name,
             jobTitle: result.rows[0].job_title,
             department: result.rows[0].department,
@@ -446,9 +494,9 @@ app.post('/shiftin', async (req, res) => {
             ]
         );
 
-        res.status(201).json({ 
-            Status: "OK", 
-            message: "Shift in successfully", 
+        res.status(201).json({
+            Status: "OK",
+            message: "Shift in successfully",
             shiftId: insertResult.rows[0].id,
             name: result.rows[0].name,
             jobTitle: result.rows[0].job_title,
@@ -526,7 +574,7 @@ app.get("/getimage/:staffId", async (req, res) => {
         }
 
         const imageBuffer = result.rows[0].image;
-        
+
         res.writeHead(200, {
             "Content-Type": "image/jpeg", // Change this if needed
             "Content-Length": imageBuffer.length
@@ -568,9 +616,9 @@ app.post('/getDeviceInfo', async (req, res) => {
             return res.status(404).json({ Status: "Error", message: "deviceID not match." });
         }
 
-        res.status(200).json({ 
-            Status: "OK", 
-            message: "Get device info successfully", 
+        res.status(200).json({
+            Status: "OK",
+            message: "Get device info successfully",
             vehicleName: result.rows[0].vehicle_name,
             vehicleType: result.rows[0].vehicle_type,
             vehicleStatus: result.rows[0].vehicle_status,
@@ -617,9 +665,9 @@ app.post('/registerDevice', async (req, res) => {
             return res.status(200).json({ Status: "OK", message: "Register device successfully", is_registered: false });
         }
 
-        res.status(200).json({ 
-            Status: "OK", 
-            message: "Device allready register", 
+        res.status(200).json({
+            Status: "OK",
+            message: "Device allready register",
             is_registered: result.rows[0].is_registered
         });
     } catch (error) {
@@ -631,7 +679,7 @@ app.post('/registerDevice', async (req, res) => {
 });
 
 app.get("/getTest", async (req, res) => {
-    res.status(200).json({Status:"OK"});
+    res.status(200).json({ Status: "OK" });
 });
 
 app.get('/shifts', async (req, res) => {
@@ -658,7 +706,7 @@ app.get('/shifts', async (req, res) => {
         console.error(err);
         res.status(500).send('Error retrieving shift log data');
     }
-  });
+});
 
 // -------------- EXPORT CSV --------------
 app.get('/shifts/export/csv', async (req, res) => {
@@ -693,15 +741,15 @@ app.get('/shifts/export/csv', async (req, res) => {
 
         // 2) Loop ข้อมูล shiftsData เพื่อสร้างแต่ละแถว
         shiftsData.forEach(shift => {
-        csvContent += [
-            shift.shift_log_id,
-            `"${shift.staff_name}"`,    // ใส่ "" เผื่อมี comma ในชื่อ
-            `"${shift.company_name}"`,
-            shift.card_uid,
-            `"${shift.fleet_name}"`,
-            shift.check_in,
-            shift.check_out
-        ].join(',') + '\n';
+            csvContent += [
+                shift.shift_log_id,
+                `"${shift.staff_name}"`,    // ใส่ "" เผื่อมี comma ในชื่อ
+                `"${shift.company_name}"`,
+                shift.card_uid,
+                `"${shift.fleet_name}"`,
+                shift.check_in,
+                shift.check_out
+            ].join(',') + '\n';
         });
 
         // 3) ส่ง CSV ออกไป
@@ -711,7 +759,7 @@ app.get('/shifts/export/csv', async (req, res) => {
         res.status(500).send('Error exporting CSV');
     }
 });
-  
+
 // -------------- EXPORT EXCEL --------------
 app.get('/shifts/export/excel', async (req, res) => {
     try {
@@ -741,26 +789,26 @@ app.get('/shifts/export/excel', async (req, res) => {
 
         // กำหนดหัวตาราง (Header)
         worksheet.columns = [
-        { header: 'Shift ID', key: 'shift_log_id', width: 10 },
-        { header: 'Staff Name', key: 'staff_name', width: 20 },
-        { header: 'Company Name', key: 'company_name', width: 20 },
-        { header: 'Card UID', key: 'card_uid', width: 15 },
-        { header: 'Fleet Name', key: 'fleet_name', width: 20 },
-        { header: 'Check In', key: 'check_in', width: 20 },
-        { header: 'Check Out', key: 'check_out', width: 20 },
+            { header: 'Shift ID', key: 'shift_log_id', width: 10 },
+            { header: 'Staff Name', key: 'staff_name', width: 20 },
+            { header: 'Company Name', key: 'company_name', width: 20 },
+            { header: 'Card UID', key: 'card_uid', width: 15 },
+            { header: 'Fleet Name', key: 'fleet_name', width: 20 },
+            { header: 'Check In', key: 'check_in', width: 20 },
+            { header: 'Check Out', key: 'check_out', width: 20 },
         ];
 
         // ใส่ข้อมูลใน Worksheet
         shiftsData.forEach(shift => {
-        worksheet.addRow({
-            shift_log_id: shift.shift_log_id,
-            staff_name: shift.staff_name,
-            company_name: shift.company_name,
-            card_uid: shift.card_uid,
-            fleet_name: shift.fleet_name,
-            check_in: shift.check_in,
-            check_out: shift.check_out
-        });
+            worksheet.addRow({
+                shift_log_id: shift.shift_log_id,
+                staff_name: shift.staff_name,
+                company_name: shift.company_name,
+                card_uid: shift.card_uid,
+                fleet_name: shift.fleet_name,
+                check_in: shift.check_in,
+                check_out: shift.check_out
+            });
         });
 
         // กำหนด Header ให้ Browser ดาวน์โหลดไฟล์เป็น Excel
