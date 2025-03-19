@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Shift Log</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 80%;
+        margin: 0 auto;
+      }
+      th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      h1 {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Shift Log</h1>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Staff ID</th>
+        <th>Card ID</th>
+        <th>Fleet ID</th>
+        <th>Check In</th>
+        <th>Check Out</th>
+      </tr>
+      <% shifts.forEach(shift => { %>
+      <tr>
+        <td><%= shift.id %></td>
+        <td><%= shift.staff_id %></td>
+        <td><%= shift.card_id %></td>
+        <td><%= shift.fleet_id %></td>
+        <td><%= shift.check_in %></td>
+        <td><%= shift.check_out %></td>
+      </tr>
+      <% }) %>
+    </table>
+  </body>
+</html>

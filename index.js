@@ -18,6 +18,8 @@ const pool = new Pool({
     idleTimeoutMillis: 30000
 });
 
+app.set('view engine', 'ejs');
+
 app.post('/login', async (req, res) => {
     let data = req.body;
     /*
@@ -630,6 +632,18 @@ app.post('/registerDevice', async (req, res) => {
 app.get("/getTest", async (req, res) => {
     res.status(200).json({Status:"OK"});
 });
+
+app.get('/shifts', async (req, res) => {
+    try {
+      // ดึงข้อมูลทั้งหมดจากตาราง shift_log
+      const result = await pool.query('SELECT * FROM shift_log ORDER BY id DESC');
+      // ส่งผลลัพธ์ไปยัง Template 'shifts.ejs'
+      res.render('shifts', { shifts: result.rows });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('เกิดข้อผิดพลาดในการดึงข้อมูลการเข้ากะ-ออกกะ');
+    }
+  });
 
 app.listen(8000, () => {
     console.log('app listening on port', 8000)
