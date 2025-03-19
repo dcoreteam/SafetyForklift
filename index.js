@@ -636,25 +636,27 @@ app.get("/getTest", async (req, res) => {
 app.get('/shifts', async (req, res) => {
     try {
         const query = `
-          SELECT
-            sl.id AS shift_log_id,
-            st.name AS staff_name,
-            c.uid AS card_uid,
-            f.vehicle_name AS fleet_name,
-            sl.check_in,
-            sl.check_out
-          FROM shift_log sl
-          JOIN staff st ON sl.staff_id = st.id
-          JOIN card c ON sl.card_id = c.id
-          JOIN fleet f ON sl.fleet_id = f.id
-          ORDER BY sl.id DESC
+            SELECT
+                sl.id AS shift_log_id,
+                st.name AS staff_name,
+                c2.name AS company_name,
+                card.uid AS card_uid,
+                f.vehicle_name AS fleet_name,
+                TO_CHAR(sl.check_in, 'YYYY-MM-DD HH24:MI:SS') AS check_in,
+                TO_CHAR(sl.check_out, 'YYYY-MM-DD HH24:MI:SS') AS check_out
+            FROM shift_log sl
+            JOIN staff st ON sl.staff_id = st.id
+            JOIN company c2 ON st.company_id = c2.id
+            JOIN card ON sl.card_id = card.id
+            JOIN fleet f ON sl.fleet_id = f.id
+            ORDER BY sl.id DESC
         `;
         const result = await pool.query(query);
         res.render('shifts', { shifts: result.rows });
-      } catch (err) {
+    } catch (err) {
         console.error(err);
         res.status(500).send('Error retrieving shift log data');
-      }
+    }
   });
 
 app.listen(8000, () => {
