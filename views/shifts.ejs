@@ -12,6 +12,19 @@
       .filter-form div {
         margin-bottom: 8px;
       }
+      .export-buttons {
+        text-align: center;
+        margin: 10px 0;
+      }
+      .export-buttons a {
+        display: inline-block;
+        margin: 0 5px;
+        padding: 8px 16px;
+        background: #007bff;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+      }
       table {
         border-collapse: collapse;
         width: 80%;
@@ -33,15 +46,14 @@
   <body>
     <h1>Shift Report</h1>
 
-    <!-- ฟอร์มสำหรับกรองข้อมูล -->
-    <!-- method="GET" เพื่อส่ง query string เช่น ?company_id=1&staff_name=... -->
+    <!-- ฟอร์มกรอง (method="GET" เพื่อส่ง query string) -->
     <form class="filter-form" method="GET" action="/shifts">
       <div>
         <label>Company: </label>
         <select name="company_id">
           <option value="">-- All Companies --</option>
           <% companies.forEach(company => { %>
-            <option value="<%= company.id %>" 
+            <option value="<%= company.id %>"
               <%= (filters.company_id == company.id) ? 'selected' : '' %>>
               <%= company.name %>
             </option>
@@ -51,22 +63,22 @@
 
       <div>
         <label>Card UID: </label>
-        <input type="text" name="card_uid" value="<%= filters.card_uid || '' %>" />
+        <input type="text" name="card_uid" value="<%= filters.card_uid || '' %>">
       </div>
 
       <div>
         <label>Staff Name: </label>
-        <input type="text" name="staff_name" value="<%= filters.staff_name || '' %>" />
+        <input type="text" name="staff_name" value="<%= filters.staff_name || '' %>">
       </div>
 
       <div>
         <label>Start Date: </label>
-        <input type="date" name="start_date" value="<%= filters.start_date || '' %>" />
+        <input type="date" name="start_date" value="<%= filters.start_date || '' %>">
       </div>
 
       <div>
         <label>End Date: </label>
-        <input type="date" name="end_date" value="<%= filters.end_date || '' %>" />
+        <input type="date" name="end_date" value="<%= filters.end_date || '' %>">
       </div>
 
       <div>
@@ -74,7 +86,17 @@
       </div>
     </form>
 
-    <!-- ตารางแสดงผลลัพธ์การกรอง -->
+    <!-- ปุ่ม Export CSV / Excel (ส่ง query string เดียวกัน) -->
+    <div class="export-buttons">
+      <a href="/shifts/export/csv?<%= Object.keys(filters).map(key => key + '=' + filters[key]).join('&') %>">
+        Export CSV
+      </a>
+      <a href="/shifts/export/excel?<%= Object.keys(filters).map(key => key + '=' + filters[key]).join('&') %>">
+        Export Excel
+      </a>
+    </div>
+
+    <!-- ตารางแสดงผลลัพธ์ -->
     <table>
       <thead>
         <tr>

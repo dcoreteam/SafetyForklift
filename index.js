@@ -746,191 +746,198 @@ app.get("/getTest", async (req, res) => {
     res.status(200).json({ Status: "OK" });
 });
 
-app.get('/shifts', async (req, res) => {
-    try {
-      // เก็บ query string จาก URL เช่น ?company_id=1&card_uid=123&staff_name=John&start_date=2025-03-01&end_date=2025-03-31
-      const { company_id, card_uid, staff_name, start_date, end_date } = req.query;
-  
-      // สร้าง Query พื้นฐาน (JOIN ตารางต่าง ๆ)
-      let baseQuery = `
-        SELECT
-          sl.id AS shift_log_id,
-          st.name AS staff_name,
-          c2.name AS company_name,
-          card.uid AS card_uid,
-          f.vehicle_name AS fleet_name,
-          sl.check_in,
-          sl.check_out
-        FROM shift_log sl
-        JOIN staff st ON sl.staff_id = st.id
-        JOIN company c2 ON st.company_id = c2.id
-        JOIN card ON sl.card_id = card.id
-        JOIN fleet f ON sl.fleet_id = f.id
-      `;
-  
-      // เตรียม array สำหรับเก็บเงื่อนไข (WHERE) และพารามิเตอร์
-      let conditions = [];
-      let params = [];
-  
-      // กรองด้วย company_id (ถ้าเลือก)
-      if (company_id) {
-        conditions.push(`c2.id = $${params.length + 1}`);
-        params.push(company_id);
+/* --------------------------------------------
+ 2.1. ฟังก์ชันช่วยสร้าง Query สำหรับ Shift Log
+     ตามเงื่อนไขที่ผู้ใช้กรอก
+-------------------------------------------- */
+function buildShiftQuery(filters) {
+    /*
+      filters = {
+        company_id: (string|undefined),
+        card_uid: (string|undefined),
+        staff_name: (string|undefined),
+        start_date: (string|undefined),
+        end_date: (string|undefined)
       }
-  
-      // กรองด้วย card_uid (ถ้าใส่)
-      if (card_uid) {
-        conditions.push(`card.uid ILIKE $${params.length + 1}`);
-        params.push(`%${card_uid}%`);
-      }
-  
-      // กรองด้วย staff_name (ถ้าใส่)
-      if (staff_name) {
-        conditions.push(`st.name ILIKE $${params.length + 1}`);
-        params.push(`%${staff_name}%`);
-      }
-  
-      // กรองด้วย start_date
-      if (start_date) {
-        conditions.push(`sl.check_in >= $${params.length + 1}`);
-        params.push(start_date);
-      }
-  
-      // กรองด้วย end_date
-      if (end_date) {
-        conditions.push(`sl.check_in <= $${params.length + 1}`);
-        params.push(end_date);
-      }
-  
-      // ประกอบเงื่อนไข WHERE ถ้ามี
-      if (conditions.length > 0) {
-        baseQuery += ` WHERE ` + conditions.join(' AND ');
-      }
-  
-      // จัดเรียงข้อมูลตามลำดับ ID (ล่าสุดอยู่บน)
-      baseQuery += ` ORDER BY sl.id DESC`;
-  
-      // รัน Query
-      const result = await pool.query(baseQuery, params);
-  
-      // ดึงข้อมูลบริษัททั้งหมด (เพื่อแสดงใน dropdown filter)
-      // สมมติว่าต้องการให้ผู้ใช้เลือกบริษัทจาก select
-      const companyResult = await pool.query(`
-        SELECT id, name 
-        FROM company
-        WHERE deleted_at IS NULL
-        ORDER BY name ASC
-      `);
-  
-      // render หน้า shifts.ejs พร้อมข้อมูล
-      res.render('shifts', {
-        shifts: result.rows,      // ผลลัพธ์การ filter
-        companies: companyResult.rows, // รายชื่อบริษัททั้งหมด
-        filters: {                // เก็บค่าที่ผู้ใช้กรอกไว้ (เพื่อแสดงบนฟอร์ม)
-          company_id,
-          card_uid,
-          staff_name,
-          start_date,
-          end_date
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).send('Error retrieving shift log data');
-    }
-  });
-// -------------- EXPORT CSV --------------
-app.get('/shifts/export/csv', async (req, res) => {
-    try {
-        // ดึงข้อมูลเหมือนด้านบน
-        const query = `
-        SELECT
-            sl.id AS shift_log_id,
-            st.name AS staff_name,
-            c2.name AS company_name,
-            card.uid AS card_uid,
-            f.vehicle_name AS fleet_name,
-            TO_CHAR(sl.check_in, 'YYYY-MM-DD HH24:MI:SS') AS check_in,
-            TO_CHAR(sl.check_out, 'YYYY-MM-DD HH24:MI:SS') AS check_out
-        FROM shift_log sl
-        JOIN staff st ON sl.staff_id = st.id
-        JOIN company c2 ON st.company_id = c2.id
-        JOIN card ON sl.card_id = card.id
-        JOIN fleet f ON sl.fleet_id = f.id
-        ORDER BY sl.id DESC
-        `;
-        const result = await pool.query(query);
-        const shiftsData = result.rows;
+    */
 
-        // กำหนด Header ให้ Browser ดาวน์โหลดไฟล์เป็น CSV
+    // Base Query (มีการแปลง check_in/check_out ด้วย TO_CHAR เพื่อให้ได้รูปแบบ YYYY-MM-DD HH:mm:ss)
+    let baseQuery = `
+      SELECT
+        sl.id AS shift_log_id,
+        st.name AS staff_name,
+        c2.name AS company_name,
+        card.uid AS card_uid,
+        f.vehicle_name AS fleet_name,
+        TO_CHAR(sl.check_in, 'YYYY-MM-DD HH24:MI:SS') AS check_in,
+        TO_CHAR(sl.check_out, 'YYYY-MM-DD HH24:MI:SS') AS check_out
+      FROM shift_log sl
+      JOIN staff st ON sl.staff_id = st.id
+      JOIN company c2 ON st.company_id = c2.id
+      JOIN card ON sl.card_id = card.id
+      JOIN fleet f ON sl.fleet_id = f.id
+    `;
+
+    // เก็บเงื่อนไข (WHERE) และพารามิเตอร์
+    let conditions = [];
+    let params = [];
+
+    // กรองด้วย company_id
+    if (filters.company_id) {
+        conditions.push(`c2.id = $${params.length + 1}`);
+        params.push(filters.company_id);
+    }
+
+    // กรองด้วย card_uid
+    if (filters.card_uid) {
+        conditions.push(`card.uid ILIKE $${params.length + 1}`);
+        params.push(`%${filters.card_uid}%`);
+    }
+
+    // กรองด้วย staff_name
+    if (filters.staff_name) {
+        conditions.push(`st.name ILIKE $${params.length + 1}`);
+        params.push(`%${filters.staff_name}%`);
+    }
+
+    // กรองด้วย start_date
+    if (filters.start_date) {
+        conditions.push(`sl.check_in >= $${params.length + 1}`);
+        params.push(filters.start_date);
+    }
+
+    // กรองด้วย end_date
+    if (filters.end_date) {
+        conditions.push(`sl.check_in <= $${params.length + 1}`);
+        params.push(filters.end_date);
+    }
+
+    if (conditions.length > 0) {
+        baseQuery += ` WHERE ` + conditions.join(' AND ');
+    }
+
+    // เรียงลำดับตาม ID (ล่าสุดอยู่บน)
+    baseQuery += ` ORDER BY sl.id DESC`;
+
+    return { queryString: baseQuery, params };
+}
+
+/* --------------------------------------------
+ 2.2. Route แสดงหน้า /shifts (GET)
+      พร้อมกรองข้อมูลตาม query string
+-------------------------------------------- */
+app.get('/shifts', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        // ดึงค่า filters จาก query string
+        const { company_id, card_uid, staff_name, start_date, end_date } = req.query;
+        const filters = { company_id, card_uid, staff_name, start_date, end_date };
+
+        // สร้าง query
+        const { queryString, params } = buildShiftQuery(filters);
+
+        // รัน query
+        const result = await client.query(queryString, params);
+
+        // ดึงรายชื่อ company มาแสดงใน dropdown filter
+        const companyResult = await client.query(`
+            SELECT id, name
+            FROM company
+            WHERE deleted_at IS NULL
+            ORDER BY name ASC
+        `);
+
+        res.render('shifts', {
+            shifts: result.rows,
+            companies: companyResult.rows,
+            filters
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error retrieving shift log data');
+    } finally {
+        client.release();
+    }
+});
+
+/* --------------------------------------------
+ 2.3. Route Export CSV (GET)
+      Export ตามเงื่อนไขเดียวกัน (Filter)
+-------------------------------------------- */
+app.get('/shifts/export/csv', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        // รับค่า filters เหมือน /shifts
+        const { company_id, card_uid, staff_name, start_date, end_date } = req.query;
+        const filters = { company_id, card_uid, staff_name, start_date, end_date };
+
+        // สร้าง query ด้วยฟังก์ชันเดียวกัน
+        const { queryString, params } = buildShiftQuery(filters);
+        const result = await client.query(queryString, params);
+
+        // ตั้ง Header ให้ browser ดาวน์โหลดเป็น CSV
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename="shifts.csv"');
 
-        // สร้าง CSV ขึ้นมาเอง (แบบง่าย ๆ)
-        // 1) สร้าง Header
-        let csvContent = 'Shift ID,Staff Name,Company Name,Card UID,Fleet Name,Check In,Check Out\n';
+        // สร้าง Header ของ CSV
+        let csvContent = 'Shift ID,Staff Name,Company,Card UID,Fleet Name,Check In,Check Out\n';
 
-        // 2) Loop ข้อมูล shiftsData เพื่อสร้างแต่ละแถว
-        shiftsData.forEach(shift => {
+        // Loop ใส่ข้อมูล
+        result.rows.forEach(shift => {
+            // ใส่ "" เพื่อกัน comma ที่อาจมีในข้อความ
             csvContent += [
                 shift.shift_log_id,
-                `"${shift.staff_name}"`,    // ใส่ "" เผื่อมี comma ในชื่อ
+                `"${shift.staff_name}"`,
                 `"${shift.company_name}"`,
-                shift.card_uid,
+                `"${shift.card_uid}"`,
                 `"${shift.fleet_name}"`,
                 shift.check_in,
                 shift.check_out
             ].join(',') + '\n';
         });
 
-        // 3) ส่ง CSV ออกไป
+        // ส่ง CSV กลับ
         res.send(csvContent);
     } catch (err) {
         console.error(err);
         res.status(500).send('Error exporting CSV');
+    } finally {
+        client.release();
     }
 });
 
-// -------------- EXPORT EXCEL --------------
+/* --------------------------------------------
+ 2.4. Route Export Excel (GET)
+      Export ตามเงื่อนไขเดียวกัน (Filter)
+-------------------------------------------- */
 app.get('/shifts/export/excel', async (req, res) => {
+    const client = await pool.connect();
     try {
-        // ดึงข้อมูลเหมือนด้านบน
-        const query = `
-        SELECT
-            sl.id AS shift_log_id,
-            st.name AS staff_name,
-            c2.name AS company_name,
-            card.uid AS card_uid,
-            f.vehicle_name AS fleet_name,
-            TO_CHAR(sl.check_in, 'YYYY-MM-DD HH24:MI:SS') AS check_in,
-            TO_CHAR(sl.check_out, 'YYYY-MM-DD HH24:MI:SS') AS check_out
-        FROM shift_log sl
-        JOIN staff st ON sl.staff_id = st.id
-        JOIN company c2 ON st.company_id = c2.id
-        JOIN card ON sl.card_id = card.id
-        JOIN fleet f ON sl.fleet_id = f.id
-        ORDER BY sl.id DESC
-        `;
-        const result = await pool.query(query);
-        const shiftsData = result.rows;
+        // รับค่า filters
+        const { company_id, card_uid, staff_name, start_date, end_date } = req.query;
+        const filters = { company_id, card_uid, staff_name, start_date, end_date };
+
+        // สร้าง query ด้วยฟังก์ชันเดียวกัน
+        const { queryString, params } = buildShiftQuery(filters);
+        const result = await client.query(queryString, params);
 
         // สร้างไฟล์ Excel ด้วย exceljs
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Shifts');
 
-        // กำหนดหัวตาราง (Header)
+        // กำหนดคอลัมน์ (Header)
         worksheet.columns = [
             { header: 'Shift ID', key: 'shift_log_id', width: 10 },
             { header: 'Staff Name', key: 'staff_name', width: 20 },
-            { header: 'Company Name', key: 'company_name', width: 20 },
-            { header: 'Card UID', key: 'card_uid', width: 15 },
+            { header: 'Company', key: 'company_name', width: 20 },
+            { header: 'Card UID', key: 'card_uid', width: 20 },
             { header: 'Fleet Name', key: 'fleet_name', width: 20 },
             { header: 'Check In', key: 'check_in', width: 20 },
-            { header: 'Check Out', key: 'check_out', width: 20 },
+            { header: 'Check Out', key: 'check_out', width: 20 }
         ];
 
         // ใส่ข้อมูลใน Worksheet
-        shiftsData.forEach(shift => {
+        result.rows.forEach(shift => {
             worksheet.addRow({
                 shift_log_id: shift.shift_log_id,
                 staff_name: shift.staff_name,
@@ -942,16 +949,18 @@ app.get('/shifts/export/excel', async (req, res) => {
             });
         });
 
-        // กำหนด Header ให้ Browser ดาวน์โหลดไฟล์เป็น Excel
+        // ตั้ง Header ให้ Browser ดาวน์โหลดไฟล์ Excel
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename="shifts.xlsx"');
 
-        // เขียนไฟล์ Excel ลงใน Stream แล้วส่งกลับไปยัง Client
+        // เขียนไฟล์ลงใน stream
         await workbook.xlsx.write(res);
         res.end();
     } catch (err) {
         console.error(err);
         res.status(500).send('Error exporting Excel');
+    } finally {
+        client.release();
     }
 });
 
