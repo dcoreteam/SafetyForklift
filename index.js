@@ -761,7 +761,7 @@ function buildShiftQuery(filters) {
         end_date: (string|undefined)
       }
     */
-  
+
     let baseQuery = `
       SELECT
         sl.id AS shift_log_id,
@@ -777,55 +777,55 @@ function buildShiftQuery(filters) {
       JOIN card ON sl.card_id = card.id
       JOIN fleet f ON sl.fleet_id = f.id
     `;
-  
+
     let conditions = [];
     let params = [];
-  
+
     // Filter: company_id
     if (filters.company_id) {
-      conditions.push(`c2.id = $${params.length + 1}`);
-      params.push(filters.company_id);
+        conditions.push(`c2.id = $${params.length + 1}`);
+        params.push(filters.company_id);
     }
-  
+
     // Filter: card_uid
     if (filters.card_uid) {
-      conditions.push(`card.uid ILIKE $${params.length + 1}`);
-      params.push(`%${filters.card_uid}%`);
+        conditions.push(`card.uid ILIKE $${params.length + 1}`);
+        params.push(`%${filters.card_uid}%`);
     }
-  
+
     // Filter: staff_name
     if (filters.staff_name) {
-      conditions.push(`st.name ILIKE $${params.length + 1}`);
-      params.push(`%${filters.staff_name}%`);
+        conditions.push(`st.name ILIKE $${params.length + 1}`);
+        params.push(`%${filters.staff_name}%`);
     }
-  
+
     // Filter: fleet_name (ใหม่)
     if (filters.fleet_name) {
-      conditions.push(`f.vehicle_name ILIKE $${params.length + 1}`);
-      params.push(`%${filters.fleet_name}%`);
+        conditions.push(`f.vehicle_name ILIKE $${params.length + 1}`);
+        params.push(`%${filters.fleet_name}%`);
     }
-  
+
     // Filter: start_date
     if (filters.start_date) {
-      conditions.push(`sl.check_in >= $${params.length + 1}`);
-      params.push(filters.start_date);
+        conditions.push(`sl.check_in >= $${params.length + 1}`);
+        params.push(filters.start_date);
     }
-  
+
     // Filter: end_date
     if (filters.end_date) {
-      conditions.push(`sl.check_in <= $${params.length + 1}::date + interval '1 day')`);
-      params.push(filters.end_date);
+        conditions.push(`sl.check_in < ($${params.length + 1}::date + interval '1 day')`);
+        params.push(filters.end_date);
     }
-  
+
     if (conditions.length > 0) {
-      baseQuery += ` WHERE ` + conditions.join(' AND ');
+        baseQuery += ` WHERE ` + conditions.join(' AND ');
     }
-  
+
     // เรียงตาม ID
     baseQuery += ` ORDER BY sl.id DESC`;
-  
+
     return { queryString: baseQuery, params };
-  }
+}
 
 /* --------------------------------------------
  2.2. Route แสดงหน้า /shifts (GET)
