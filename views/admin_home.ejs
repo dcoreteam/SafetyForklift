@@ -19,38 +19,8 @@
     </style>
   </head>
   <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="/admin">
-          <strong>Admin Dashboard</strong>
-        </a>
-        <!-- ถ้ามีเมนูเพิ่มเติม สามารถใส่ใน Navbar นี้ได้ -->
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-            <!-- ตัวอย่างลิงก์อื่น ๆ ในเมนู -->
-            <li class="nav-item">
-              <a class="nav-link" href="/shifts">Shift Report</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/admin/import">Import Data</a>
-            </li>
-            <!-- เพิ่มลิงก์อื่น ๆ ตามต้องการ -->
-          </ul>
-        </div>
-      </div>
-    </nav>
+    <!-- เรียกใช้ Partial Navbar -->
+    <%- include('partials/navbar') %>
 
     <!-- Main Content -->
     <div class="container mt-5">
