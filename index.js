@@ -748,30 +748,97 @@ app.get("/getTest", async (req, res) => {
 
 app.get('/shifts', async (req, res) => {
     try {
-        const query = `
-            SELECT
-                sl.id AS shift_log_id,
-                st.name AS staff_name,
-                c2.name AS company_name,
-                card.uid AS card_uid,
-                f.vehicle_name AS fleet_name,
-                TO_CHAR(sl.check_in, 'YYYY-MM-DD HH24:MI:SS') AS check_in,
-                TO_CHAR(sl.check_out, 'YYYY-MM-DD HH24:MI:SS') AS check_out
-            FROM shift_log sl
-            JOIN staff st ON sl.staff_id = st.id
-            JOIN company c2 ON st.company_id = c2.id
-            JOIN card ON sl.card_id = card.id
-            JOIN fleet f ON sl.fleet_id = f.id
-            ORDER BY sl.id DESC
-        `;
-        const result = await pool.query(query);
-        res.render('shifts', { shifts: result.rows });
+      // เก็บ query string จาก URL เช่น ?company_id=1&card_uid=123&staff_name=John&start_date=2025-03-01&end_date=2025-03-31
+      const { company_id, card_uid, staff_name, start_date, end_date } = req.query;
+  
+      // สร้าง Query พื้นฐาน (JOIN ตารางต่าง ๆ)
+      let baseQuery = `
+        SELECT
+          sl.id AS shift_log_id,
+          st.name AS staff_name,
+          c2.name AS company_name,
+          card.uid AS card_uid,
+          f.vehicle_name AS fleet_name,
+          sl.check_in,
+          sl.check_out
+        FROM shift_log sl
+        JOIN staff st ON sl.staff_id = st.id
+        JOIN company c2 ON st.company_id = c2.id
+        JOIN card ON sl.card_id = card.id
+        JOIN fleet f ON sl.fleet_id = f.id
+      `;
+  
+      // เตรียม array สำหรับเก็บเงื่อนไข (WHERE) และพารามิเตอร์
+      let conditions = [];
+      let params = [];
+  
+      // กรองด้วย company_id (ถ้าเลือก)
+      if (company_id) {
+        conditions.push(`c2.id = $${params.length + 1}`);
+        params.push(company_id);
+      }
+  
+      // กรองด้วย card_uid (ถ้าใส่)
+      if (card_uid) {
+        conditions.push(`card.uid ILIKE $${params.length + 1}`);
+        params.push(`%${card_uid}%`);
+      }
+  
+      // กรองด้วย staff_name (ถ้าใส่)
+      if (staff_name) {
+        conditions.push(`st.name ILIKE $${params.length + 1}`);
+        params.push(`%${staff_name}%`);
+      }
+  
+      // กรองด้วย start_date
+      if (start_date) {
+        conditions.push(`sl.check_in >= $${params.length + 1}`);
+        params.push(start_date);
+      }
+  
+      // กรองด้วย end_date
+      if (end_date) {
+        conditions.push(`sl.check_in <= $${params.length + 1}`);
+        params.push(end_date);
+      }
+  
+      // ประกอบเงื่อนไข WHERE ถ้ามี
+      if (conditions.length > 0) {
+        baseQuery += ` WHERE ` + conditions.join(' AND ');
+      }
+  
+      // จัดเรียงข้อมูลตามลำดับ ID (ล่าสุดอยู่บน)
+      baseQuery += ` ORDER BY sl.id DESC`;
+  
+      // รัน Query
+      const result = await pool.query(baseQuery, params);
+  
+      // ดึงข้อมูลบริษัททั้งหมด (เพื่อแสดงใน dropdown filter)
+      // สมมติว่าต้องการให้ผู้ใช้เลือกบริษัทจาก select
+      const companyResult = await pool.query(`
+        SELECT id, name 
+        FROM company
+        WHERE deleted_at IS NULL
+        ORDER BY name ASC
+      `);
+  
+      // render หน้า shifts.ejs พร้อมข้อมูล
+      res.render('shifts', {
+        shifts: result.rows,      // ผลลัพธ์การ filter
+        companies: companyResult.rows, // รายชื่อบริษัททั้งหมด
+        filters: {                // เก็บค่าที่ผู้ใช้กรอกไว้ (เพื่อแสดงบนฟอร์ม)
+          company_id,
+          card_uid,
+          staff_name,
+          start_date,
+          end_date
+        }
+      });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error retrieving shift log data');
+      console.error(err);
+      res.status(500).send('Error retrieving shift log data');
     }
-});
-
+  });
 // -------------- EXPORT CSV --------------
 app.get('/shifts/export/csv', async (req, res) => {
     try {
