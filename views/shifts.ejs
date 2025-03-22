@@ -106,13 +106,13 @@
       <!-- ปุ่ม Export -->
       <div class="mt-3 text-end export-buttons">
         <a
-          href="/shifts/export/csv?<%= Object.keys(filters).map(key => key + '=' + (filters[key] !== 'undefined' ? filters[key] : '')).join('&') %>"
+          href="/shifts/export/csv?<%= Object.keys(filters).map(key => key + '=' + (filters[key] ?? '')).join('&') %>"
           class="btn btn-outline-primary"
         >
           Export CSV
         </a>
         <a
-          href="/shifts/export/excel?<%= Object.keys(filters).map(key => key + '=' + (filters[key] !== 'undefined' ? filters[key] : '')).join('&') %>"
+          href="/shifts/export/excel?<%= Object.keys(filters).map(key => key + '=' + (filters[key] ?? '')).join('&') %>"
           class="btn btn-outline-success"
         >
           Export Excel
