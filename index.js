@@ -5,6 +5,8 @@ const app = express();
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const ExcelJS = require('exceljs');
+const path = require('path');
+const multer = require('multer');
 
 app.use(cors());
 app.use(express.json());
@@ -19,7 +21,15 @@ const pool = new Pool({
     idleTimeoutMillis: 30000
 });
 
+// ตั้งค่า EJS
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// ตั้งค่า static (ถ้ามีไฟล์ CSS/JS)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ตั้งค่า Multer สำหรับอัปโหลดไฟล์
+const upload = multer({ dest: 'uploads/' }); // โฟลเดอร์เก็บไฟล์ชั่วคราว
 
 app.post('/login', async (req, res) => {
     let data = req.body;
@@ -966,6 +976,48 @@ app.get('/shifts/export/excel', async (req, res) => {
         res.status(500).send('Error exporting Excel');
     } finally {
         client.release();
+    }
+});
+
+app.get('/admin', (req, res) => {
+    // อาจตรวจสอบสิทธิ์ (Auth) ก่อน
+    // if (!req.user || req.user.role !== 'admin') return res.redirect('/login');
+    res.render('admin_home');
+});
+
+app.get('/admin/import', (req, res) => {
+    res.render('admin_import');
+});
+
+app.post('/admin/import', upload.single('importFile'), async (req, res) => {
+    try {
+        // 1) ตรวจสอบว่าไฟล์ถูกอัปโหลดมาหรือไม่
+        if (!req.file) {
+            return res.status(400).send('No file uploaded');
+        }
+
+        // 2) req.file.path = path ของไฟล์ที่ถูกอัปโหลดในโฟลเดอร์ 'uploads/'
+        //    สามารถนำไป parse (CSV/Excel) ได้ตามต้องการ
+        //    เช่น ถ้าเป็น CSV ใช้ fast-csv หรือถ้าเป็น Excel ใช้ exceljs
+
+        // ตัวอย่าง (สมมติ parse CSV):
+        // const fs = require('fs');
+        // const csv = require('fast-csv');
+        // fs.createReadStream(req.file.path)
+        //   .pipe(csv.parse({ headers: true }))
+        //   .on('data', row => {
+        //     console.log(row);
+        //     // TODO: บันทึก row ลงฐานข้อมูล
+        //   })
+        //   .on('end', rowCount => {
+        //     console.log(`Parsed ${rowCount} rows`);
+        //   });
+
+        // 3) เสร็จแล้ว redirect กลับไปหน้า admin หรือจะแจ้งผลลัพธ์ก็ได้
+        res.redirect('/admin');
+    } catch (err) {
+        console.error('Error importing data:', err);
+        res.status(500).send('Error importing data');
     }
 });
 
