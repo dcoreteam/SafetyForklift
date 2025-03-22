@@ -813,7 +813,7 @@ function buildShiftQuery(filters) {
   
     // Filter: end_date
     if (filters.end_date) {
-      conditions.push(`sl.check_in <= $${params.length + 1}`);
+      conditions.push(`sl.check_in <= $${params.length + 1}::date + interval '1 day')`);
       params.push(filters.end_date);
     }
   
