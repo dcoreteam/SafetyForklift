@@ -756,12 +756,12 @@ function buildShiftQuery(filters) {
         company_id: (string|undefined),
         card_uid: (string|undefined),
         staff_name: (string|undefined),
+        fleet_name: (string|undefined), // <-- เพิ่มตัวนี้
         start_date: (string|undefined),
         end_date: (string|undefined)
       }
     */
-
-    // Base Query (มีการแปลง check_in/check_out ด้วย TO_CHAR เพื่อให้ได้รูปแบบ YYYY-MM-DD HH:mm:ss)
+  
     let baseQuery = `
       SELECT
         sl.id AS shift_log_id,
@@ -777,50 +777,55 @@ function buildShiftQuery(filters) {
       JOIN card ON sl.card_id = card.id
       JOIN fleet f ON sl.fleet_id = f.id
     `;
-
-    // เก็บเงื่อนไข (WHERE) และพารามิเตอร์
+  
     let conditions = [];
     let params = [];
-
-    // กรองด้วย company_id
+  
+    // Filter: company_id
     if (filters.company_id) {
-        conditions.push(`c2.id = $${params.length + 1}`);
-        params.push(filters.company_id);
+      conditions.push(`c2.id = $${params.length + 1}`);
+      params.push(filters.company_id);
     }
-
-    // กรองด้วย card_uid
+  
+    // Filter: card_uid
     if (filters.card_uid) {
-        conditions.push(`card.uid ILIKE $${params.length + 1}`);
-        params.push(`%${filters.card_uid}%`);
+      conditions.push(`card.uid ILIKE $${params.length + 1}`);
+      params.push(`%${filters.card_uid}%`);
     }
-
-    // กรองด้วย staff_name
+  
+    // Filter: staff_name
     if (filters.staff_name) {
-        conditions.push(`st.name ILIKE $${params.length + 1}`);
-        params.push(`%${filters.staff_name}%`);
+      conditions.push(`st.name ILIKE $${params.length + 1}`);
+      params.push(`%${filters.staff_name}%`);
     }
-
-    // กรองด้วย start_date
+  
+    // Filter: fleet_name (ใหม่)
+    if (filters.fleet_name) {
+      conditions.push(`f.vehicle_name ILIKE $${params.length + 1}`);
+      params.push(`%${filters.fleet_name}%`);
+    }
+  
+    // Filter: start_date
     if (filters.start_date) {
-        conditions.push(`sl.check_in >= $${params.length + 1}`);
-        params.push(filters.start_date);
+      conditions.push(`sl.check_in >= $${params.length + 1}`);
+      params.push(filters.start_date);
     }
-
-    // กรองด้วย end_date
+  
+    // Filter: end_date
     if (filters.end_date) {
-        conditions.push(`sl.check_in <= $${params.length + 1}`);
-        params.push(filters.end_date);
+      conditions.push(`sl.check_in <= $${params.length + 1}`);
+      params.push(filters.end_date);
     }
-
+  
     if (conditions.length > 0) {
-        baseQuery += ` WHERE ` + conditions.join(' AND ');
+      baseQuery += ` WHERE ` + conditions.join(' AND ');
     }
-
-    // เรียงลำดับตาม ID (ล่าสุดอยู่บน)
+  
+    // เรียงตาม ID
     baseQuery += ` ORDER BY sl.id DESC`;
-
+  
     return { queryString: baseQuery, params };
-}
+  }
 
 /* --------------------------------------------
  2.2. Route แสดงหน้า /shifts (GET)
