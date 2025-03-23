@@ -15,6 +15,9 @@ app.use(express.urlencoded({ extended: true }));
 const userRoutes = require('./routes/user');
 app.use('/management/user', userRoutes);
 
+const companyRoutes = require('./routes/company');
+app.use('/management/company', companyRoutes);
+
 const pool = new Pool({
     user: 'palm',
     password: 'qwer1234',

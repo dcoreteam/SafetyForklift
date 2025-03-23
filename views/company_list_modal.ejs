@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Company Management (Modal)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h1>Company Management</h1>
+
+      <!-- ปุ่ม Add Company -->
+      <button
+        class="btn btn-primary mb-3"
+        data-bs-toggle="modal"
+        data-bs-target="#companyModal"
+        onclick="openAddCompanyModal()"
+      >
+        Add Company
+      </button>
+
+      <!-- ตารางแสดง Company -->
+      <table class="table table-bordered table-striped table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Customer Code</th>
+            <th>Contact Person</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (companies.length === 0) { %>
+            <tr>
+              <td colspan="7" class="text-center">No companies found.</td>
+            </tr>
+          <% } else { %>
+            <% companies.forEach(comp => { %>
+              <tr>
+                <td><%= comp.company_id %></td>
+                <td><%= comp.name %></td>
+                <td><%= comp.customer_code %></td>
+                <td><%= comp.contact_person || '' %></td>
+                <td><%= comp.contact_phone || '' %></td>
+                <td><%= comp.contact_email || '' %></td>
+                <td>
+                  <!-- ปุ่ม Edit -->
+                  <button
+                    class="btn btn-sm btn-warning"
+                    data-bs-toggle="modal"
+                    data-bs-target="#companyModal"
+                    onclick="openEditCompanyModal(
+                      <%= comp.company_id %>,
+                      '<%= comp.name %>',
+                      '<%= comp.address ? comp.address.replace(/'/g, "\\'") : '' %>',
+                      '<%= comp.contact_person ? comp.contact_person.replace(/'/g, "\\'") : '' %>',
+                      '<%= comp.contact_phone ? comp.contact_phone.replace(/'/g, "\\'") : '' %>',
+                      '<%= comp.contact_email ? comp.contact_email.replace(/'/g, "\\'") : '' %>',
+                      '<%= comp.customer_code %>'
+                    )"
+                  >
+                    Edit
+                  </button>
+                  <!-- ปุ่ม Delete -->
+                  <form
+                    action="/management/company/delete/<%= comp.company_id %>"
+                    method="POST"
+                    class="d-inline"
+                    onsubmit="return confirm('Are you sure you want to delete this company?');"
+                  >
+                    <button type="submit" class="btn btn-sm btn-danger">
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal (ใช้ตัวเดียวสำหรับ Add/Edit) -->
+    <div
+      class="modal fade"
+      id="companyModal"
+      tabindex="-1"
+      aria-labelledby="companyModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="companyForm" method="POST">
+            <div class="modal-header">
+              <h5 class="modal-title" id="companyModalLabel">Add Company</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="companyId" />
+
+              <div class="mb-3">
+                <label for="name" class="form-label">Name:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  name="name"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="address" class="form-label">Address:</label>
+                <textarea
+                  class="form-control"
+                  id="address"
+                  name="address"
+                  rows="2"
+                ></textarea>
+              </div>
+
+              <div class="mb-3">
+                <label for="contact_person" class="form-label">Contact Person:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="contact_person"
+                  name="contact_person"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="contact_phone" class="form-label">Phone:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="contact_phone"
+                  name="contact_phone"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="contact_email" class="form-label">Email:</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="contact_email"
+                  name="contact_email"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="customer_code" class="form-label">Customer Code:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="customer_code"
+                  name="customer_code"
+                  maxlength="10"
+                  required
+                />
+              </div>
+
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
+
+    <script>
+      // ฟังก์ชันเปิด Modal ในโหมด Add Company
+      function openAddCompanyModal() {
+        document.getElementById('companyModalLabel').textContent = 'Add Company';
+        document.getElementById('companyForm').action = '/management/company/add';
+
+        // เคลียร์ฟอร์ม
+        document.getElementById('companyId').value = '';
+        document.getElementById('name').value = '';
+        document.getElementById('address').value = '';
+        document.getElementById('contact_person').value = '';
+        document.getElementById('contact_phone').value = '';
+        document.getElementById('contact_email').value = '';
+        document.getElementById('customer_code').value = '';
+      }
+
+      // ฟังก์ชันเปิด Modal ในโหมด Edit Company
+      function openEditCompanyModal(
+        companyId,
+        name,
+        address,
+        contact_person,
+        contact_phone,
+        contact_email,
+        customer_code
+      ) {
+        document.getElementById('companyModalLabel').textContent = 'Edit Company';
+        document.getElementById('companyForm').action = '/management/company/edit/' + companyId;
+
+        document.getElementById('companyId').value = companyId;
+        document.getElementById('name').value = name;
+        document.getElementById('address').value = address;
+        document.getElementById('contact_person').value = contact_person;
+        document.getElementById('contact_phone').value = contact_phone;
+        document.getElementById('contact_email').value = contact_email;
+        document.getElementById('customer_code').value = customer_code;
+      }
+    </script>
+  </body>
+</html>
