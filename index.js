@@ -21,6 +21,8 @@ app.use('/management/company', companyRoutes);
 const staffRoutes = require('./routes/staff');
 app.use('/management/staff', staffRoutes);
 
+const fleetRoutes = require('./routes/fleet');
+app.use('/management/fleet', fleetRoutes);
 
 const pool = new Pool({
     user: 'palm',
