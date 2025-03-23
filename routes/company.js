@@ -1,4 +1,5 @@
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 const { Pool } = require('pg');
 const crypto = require('crypto'); // ใช้ generate code หรือจะใช้วิธีอื่น
@@ -15,8 +16,9 @@ const pool = new Pool({
 // ฟังก์ชันสำหรับ Generate customer_code ขนาด 10 ตัวอักษร
 // ตัวอย่าง: random hex 5 ไบต์ => 10 ตัวอักษร
 function generateCustomerCode() {
-  return crypto.randomBytes(5).toString('hex').toUpperCase(); 
+  //return crypto.randomBytes(5).toString('hex').toUpperCase(); 
   // ได้ string เช่น "A1B2C3D4E5"
+  return uuidv4().replace(/-/g, '').toUpperCase().slice(0, 10); // ตัดให้เหลือ 10 ตัว
 }
 
 /* -----------------------------------------
@@ -82,6 +84,7 @@ router.post('/add', async (req, res) => {
         updated_at
       )
       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      RETURNING id
     `;
     await client.query(insertQuery, [
       name,
