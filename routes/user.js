@@ -58,6 +58,22 @@ router.post('/add', async (req, res) => {
   const { username, password, role, company_id, view_map, create_staff } = req.body;
   const client = await pool.connect();
   try {
+    // 2) ตรวจสอบว่า customerCode นี้มีในตาราง company หรือไม่
+    const companyQuery = `
+      SELECT customer_code
+      FROM company
+      WHERE id = $1
+        AND deleted_at IS NULL
+    `;
+    const companyResult = await client.query(companyQuery, [company_id]);
+    if (companyResult.rows.length === 0) {
+      return res.status(400).json({
+        Status: "Error",
+        message: "Invalid customer code or company not found"
+      });
+    }
+    const customer_code = companyResult.rows[0].customer_code;
+    const hashedPassword = crypto.scryptSync(password, customer_code, 64).toString('hex');
     const insertQuery = `
       INSERT INTO users (
         username, 
@@ -73,7 +89,7 @@ router.post('/add', async (req, res) => {
     `;
     await client.query(insertQuery, [
       username,
-      password,
+      hashedPassword,
       role,
       company_id,
       view_map === 'on',       // ถ้า checkbox ถูกติ๊ก, ค่าจะเป็น 'on' => true
