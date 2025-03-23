@@ -18,6 +18,10 @@ app.use('/management/user', userRoutes);
 const companyRoutes = require('./routes/company');
 app.use('/management/company', companyRoutes);
 
+const staffRoutes = require('./routes/staff');
+app.use('/management/staff', staffRoutes);
+
+
 const pool = new Pool({
     user: 'palm',
     password: 'qwer1234',
