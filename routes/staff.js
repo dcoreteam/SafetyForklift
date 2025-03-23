@@ -3,12 +3,13 @@ const router = express.Router();
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  user: 'dbuser',
-  host: 'localhost',
-  database: 'mydatabase',
-  password: 'dbpassword',
-  port: 5432
-});
+    user: 'palm',
+    host: '203.154.32.219',
+    database: 'fm',
+    password: 'qwer1234',
+    port: 5432,
+    idleTimeoutMillis: 30000
+  });
 
 /* -----------------------------------------
    1) แสดงรายการ Staff (GET /management/staff)
