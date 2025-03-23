@@ -12,7 +12,7 @@
   <body>
     <!-- เรียกใช้ Partial Navbar -->
     <%- include('partials/navbar') %>
-    
+
     <div class="container mt-4">
       <h1>Company Management</h1>
 
@@ -54,7 +54,6 @@
                 <td><%= comp.contact_phone || '' %></td>
                 <td><%= comp.contact_email || '' %></td>
                 <td>
-                  <!-- ปุ่ม Edit -->
                   <button
                     class="btn btn-sm btn-warning"
                     data-bs-toggle="modal"
@@ -71,7 +70,6 @@
                   >
                     Edit
                   </button>
-                  <!-- ปุ่ม Delete -->
                   <form
                     action="/management/company/delete/<%= comp.company_id %>"
                     method="POST"
