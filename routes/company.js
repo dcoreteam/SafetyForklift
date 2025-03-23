@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const crypto = require('crypto'); // ใช้ generate code หรือจะใช้วิธีอื่น
 
-// ตั้งค่าเชื่อมต่อ PostgreSQL
 const pool = new Pool({
     user: 'palm',
     host: '203.154.32.219',
@@ -11,6 +11,13 @@ const pool = new Pool({
     port: 5432,
     idleTimeoutMillis: 30000
   });
+
+// ฟังก์ชันสำหรับ Generate customer_code ขนาด 10 ตัวอักษร
+// ตัวอย่าง: random hex 5 ไบต์ => 10 ตัวอักษร
+function generateCustomerCode() {
+  return crypto.randomBytes(5).toString('hex').toUpperCase(); 
+  // ได้ string เช่น "A1B2C3D4E5"
+}
 
 /* -----------------------------------------
    1) แสดงรายการ Company (GET /management/company)
@@ -54,9 +61,12 @@ router.post('/add', async (req, res) => {
     address,
     contact_person,
     contact_phone,
-    contact_email,
-    customer_code
+    contact_email
+    // ไม่รับ customer_code จาก client เพราะจะ generate อัตโนมัติ
   } = req.body;
+
+  // Generate customer_code อัตโนมัติ
+  const customer_code = generateCustomerCode();
 
   const client = await pool.connect();
   try {
@@ -102,12 +112,13 @@ router.post('/edit/:id', async (req, res) => {
     address,
     contact_person,
     contact_phone,
-    contact_email,
-    customer_code
+    contact_email
+    // ไม่รับ customer_code เพราะไม่ให้แก้
   } = req.body;
 
   const client = await pool.connect();
   try {
+    // ไม่อัปเดต customer_code (ตัดออกจากคำสั่ง UPDATE)
     const updateQuery = `
       UPDATE company
       SET
@@ -116,9 +127,8 @@ router.post('/edit/:id', async (req, res) => {
         contact_person = $3,
         contact_phone = $4,
         contact_email = $5,
-        customer_code = $6,
         updated_at = NOW()
-      WHERE id = $7
+      WHERE id = $6
         AND deleted_at IS NULL
     `;
     await client.query(updateQuery, [
@@ -127,7 +137,6 @@ router.post('/edit/:id', async (req, res) => {
       contact_person,
       contact_phone,
       contact_email,
-      customer_code,
       companyId
     ]);
 
