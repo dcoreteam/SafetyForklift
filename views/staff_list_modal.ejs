@@ -107,7 +107,7 @@
     >
       <div class="modal-dialog">
         <div class="modal-content">
-          <form id="staffForm" method="POST">
+          <form id="staffForm" method="POST" action="/management/staff/add" enctype="multipart/form-data">
             <div class="modal-header">
               <h5 class="modal-title" id="staffModalLabel">Add Staff</h5>
               <button
@@ -138,6 +138,16 @@
                   class="form-control"
                   id="job_title"
                   name="job_title"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="department" class="form-label">Department:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="department"
+                  name="department"
                 />
               </div>
 
@@ -201,12 +211,13 @@
               </div>
 
               <div class="mb-3">
-                <label for="department" class="form-label">Department:</label>
+                <label for="image" class="form-label">Staff Image (JPG only):</label>
                 <input
-                  type="text"
+                  type="file"
                   class="form-control"
-                  id="department"
-                  name="department"
+                  id="image"
+                  name="image"
+                  accept=".jpg"
                 />
               </div>
 

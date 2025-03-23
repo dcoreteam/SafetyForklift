@@ -1,15 +1,32 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const pool = new Pool({
-    user: 'palm',
-    host: '203.154.32.219',
-    database: 'fm',
-    password: 'qwer1234',
-    port: 5432,
-    idleTimeoutMillis: 30000
-  });
+  user: 'palm',
+  host: '203.154.32.219',
+  database: 'fm',
+  password: 'qwer1234',
+  port: 5432,
+  idleTimeoutMillis: 30000
+});
+
+// ตั้งค่าที่เก็บไฟล์ชั่วคราว
+const upload = multer({
+  dest: 'uploads/',
+  fileFilter: (req, file, cb) => {
+    // เช็คไฟล์นามสกุล .jpg หรือ .jpeg
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.jpg' || ext === '.jpeg') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .jpg/.jpeg files are allowed'), false);
+    }
+  }
+});
 
 /* -----------------------------------------
    1) แสดงรายการ Staff (GET /management/staff)
@@ -80,7 +97,7 @@ router.get('/', async (req, res) => {
 /* -----------------------------------------
    2) เพิ่ม Staff (Add) (POST /management/staff/add)
 ------------------------------------------*/
-router.post('/add', async (req, res) => {
+router.post('/add', upload.single('image'), async (req, res) => {
   const {
     name,
     job_title,
@@ -95,22 +112,30 @@ router.post('/add', async (req, res) => {
 
   const client = await pool.connect();
   try {
+    // เตรียม buffer สำหรับเก็บรูป (bytea)
+    let imageBuffer = null;
+    if (req.file) {
+      // อ่านไฟล์จาก path ชั่วคราว
+      imageBuffer = fs.readFileSync(req.file.path);
+    }
+
     const insertQuery = `
-      INSERT INTO staff (
-        name,
-        job_title,
-        company_id,
-        address,
-        phone_no,
-        email,
-        site_id,
-        shift_time_id,
-        department,
-        created_at,
-        updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-    `;
+        INSERT INTO staff (
+          name,
+          job_title,
+          company_id,
+          address,
+          phone_no,
+          email,
+          site_id,
+          shift_time_id,
+          department,
+          image,          -- เก็บรูปลงคอลัมน์ image (bytea)
+          created_at,
+          updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      `;
     await client.query(insertQuery, [
       name,
       job_title,
@@ -120,8 +145,14 @@ router.post('/add', async (req, res) => {
       email,
       site_id || null,
       shift_time_id || null,
-      department
+      department,
+      imageBuffer
     ]);
+
+    // ลบไฟล์ tmp ออกจาก 'uploads/' ถ้าไม่ต้องการเก็บไว้
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
 
     res.redirect('/management/staff');
   } catch (error) {
@@ -131,6 +162,7 @@ router.post('/add', async (req, res) => {
     client.release();
   }
 });
+
 
 /* -----------------------------------------
    3) แก้ไข Staff (Edit) (POST /management/staff/edit/:id)
