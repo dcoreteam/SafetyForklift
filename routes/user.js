@@ -128,4 +128,24 @@ router.post('/edit/:id', async (req, res) => {
   }
 });
 
+router.post('/delete/:id', async (req, res) => {
+  const userId = req.params.id;
+  const client = await pool.connect();
+  try {
+    const deleteQuery = `
+      UPDATE users
+      SET deleted_at = NOW()
+      WHERE id = $1
+        AND deleted_at IS NULL
+    `;
+    await client.query(deleteQuery, [userId]);
+    res.redirect('/management/user');
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).send('Internal server error');
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;
