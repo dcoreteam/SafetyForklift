@@ -12,6 +12,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const userRoutes = require('./routes/user');
+app.use('/management/user', userRoutes);
+
 const pool = new Pool({
     user: 'palm',
     password: 'qwer1234',
