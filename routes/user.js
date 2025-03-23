@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const crypto = require('crypto');
 
 // ตั้งค่าการเชื่อมต่อ PostgreSQL (ปรับตามจริง)
 const pool = new Pool({
