@@ -124,7 +124,7 @@
                 <select class="form-select" id="company_id" name="company_id">
                   <% companies.forEach(comp=> { %>
                     <option value="<%= comp.id %>">
-                      <%= comp.name %>
+                      [<%= comp.customer_code %>] <%= comp.name %>
                     </option>
                     <% }) %>
                 </select>

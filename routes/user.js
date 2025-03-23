@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
 
     // ดึงรายการ company ทั้งหมด (สำหรับ dropdown เลือก company)
     const companyResult = await client.query(`
-      SELECT id, name
+      SELECT id, name, customer_code
       FROM company
       WHERE deleted_at IS NULL
       ORDER BY name ASC
