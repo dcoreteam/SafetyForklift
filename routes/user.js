@@ -12,20 +12,20 @@ const pool = new Pool({
   idleTimeoutMillis: 30000
 });
 
-/* -----------------------------------------
-   1) แสดงรายการผู้ใช้ (GET /management/user)
-------------------------------------------*/
+// 1) แสดงรายการ User (พร้อม JOIN กับตาราง company ถ้าต้องการ)
 router.get('/', async (req, res) => {
   const client = await pool.connect();
   try {
-    // JOIN ตาราง users กับ company เพื่อดึง company.name มาแสดง
     const query = `
       SELECT
         u.id AS user_id,
         u.username,
-        c.name AS company_name,
+        u.password,
+        u.role,
         u.view_map,
-        u.create_staff
+        u.create_staff,
+        u.company_id,
+        c.name AS company_name
       FROM users u
       JOIN company c ON u.company_id = c.id
       WHERE u.deleted_at IS NULL
@@ -34,38 +34,52 @@ router.get('/', async (req, res) => {
     const result = await client.query(query);
     const users = result.rows;
 
-    // ส่งไป render หน้า EJS ชื่อ user_list
-    res.render('user_list', { users });
-  } catch (error) {
-    console.error('Error fetching users:', error);
+    // ดึงรายการ company ทั้งหมด (สำหรับ dropdown เลือก company)
+    const companyResult = await client.query(`
+      SELECT id, name
+      FROM company
+      WHERE deleted_at IS NULL
+      ORDER BY name ASC
+    `);
+    const companies = companyResult.rows;
+
+    // render หน้า user_list.ejs
+    res.render('user_list_modal', { users, companies });
+  } catch (err) {
+    console.error('Error fetching users:', err);
     res.status(500).send('Internal server error');
   } finally {
     client.release();
   }
 });
 
-/* -----------------------------------------
-   2) แสดงฟอร์มเพิ่มผู้ใช้ (GET /management/user/add)
-------------------------------------------*/
-router.get('/add', (req, res) => {
-  // ส่งหน้าฟอร์มเปล่า ๆ ไป (user_form.ejs) ในโหมด "Add"
-  res.render('user_form', { user: null, formMode: 'add' });
-});
-
-/* -----------------------------------------
-   2.1) รับข้อมูลจากฟอร์ม "เพิ่มผู้ใช้" (POST /management/user/add)
-------------------------------------------*/
+// 2) เพิ่มผู้ใช้ (Add)
 router.post('/add', async (req, res) => {
-  const { username, password, role, company_id } = req.body;
-
+  const { username, password, role, company_id, view_map, create_staff } = req.body;
   const client = await pool.connect();
   try {
-    // ตัวอย่าง: ยังไม่ได้ Hash Password
     const insertQuery = `
-      INSERT INTO users (username, password, role, company_id, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, NOW(), NOW())
+      INSERT INTO users (
+        username, 
+        password, 
+        role, 
+        company_id, 
+        view_map, 
+        create_staff,
+        created_at, 
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
     `;
-    await client.query(insertQuery, [username, password, role, company_id]);
+    await client.query(insertQuery, [
+      username,
+      password,
+      role,
+      company_id,
+      view_map === 'on',       // ถ้า checkbox ถูกติ๊ก, ค่าจะเป็น 'on' => true
+      create_staff === 'on'
+    ]);
+
     res.redirect('/management/user');
   } catch (error) {
     console.error('Error adding user:', error);
@@ -75,84 +89,39 @@ router.post('/add', async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   3) แสดงฟอร์มแก้ไขผู้ใช้ (GET /management/user/edit/:id)
-------------------------------------------*/
-router.get('/edit/:id', async (req, res) => {
-  const userId = req.params.id;
-  const client = await pool.connect();
-  try {
-    const result = await client.query(`
-      SELECT *
-      FROM users
-      WHERE id = $1
-        AND deleted_at IS NULL
-      LIMIT 1
-    `, [userId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).send('User not found');
-    }
-    const user = result.rows[0];
-
-    // ส่ง user_form.ejs ในโหมด "edit"
-    res.render('user_form', { user, formMode: 'edit' });
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).send('Internal server error');
-  } finally {
-    client.release();
-  }
-});
-
-/* -----------------------------------------
-   3.1) รับข้อมูลจากฟอร์ม "แก้ไขผู้ใช้" (POST /management/user/edit/:id)
-------------------------------------------*/
+// 3) แก้ไขผู้ใช้ (Edit)
 router.post('/edit/:id', async (req, res) => {
   const userId = req.params.id;
-  const { username, password, role, company_id } = req.body;
+  const { username, password, role, company_id, view_map, create_staff } = req.body;
 
   const client = await pool.connect();
   try {
     const updateQuery = `
       UPDATE users
-      SET username = $1,
-          password = $2,
-          role = $3,
-          company_id = $4,
-          updated_at = NOW()
-      WHERE id = $5
+      SET
+        username = $1,
+        password = $2,
+        role = $3,
+        company_id = $4,
+        view_map = $5,
+        create_staff = $6,
+        updated_at = NOW()
+      WHERE id = $7
         AND deleted_at IS NULL
     `;
-    await client.query(updateQuery, [username, password, role, company_id, userId]);
+    await client.query(updateQuery, [
+      username,
+      password,
+      role,
+      company_id,
+      view_map === 'on',
+      create_staff === 'on',
+      userId
+    ]);
 
     res.redirect('/management/user');
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).send('Internal server error');
-  } finally {
-    client.release();
-  }
-});
-
-/* -----------------------------------------
-   4) ลบผู้ใช้ (POST /management/user/delete/:id)
-      - ใช้ Soft Delete โดยตั้ง deleted_at = NOW()
-------------------------------------------*/
-router.post('/delete/:id', async (req, res) => {
-  const userId = req.params.id;
-  const client = await pool.connect();
-  try {
-    const deleteQuery = `
-      UPDATE users
-      SET deleted_at = NOW()
-      WHERE id = $1
-        AND deleted_at IS NULL
-    `;
-    await client.query(deleteQuery, [userId]);
-    res.redirect('/management/user');
-  } catch (error) {
-    console.error('Error deleting user:', error);
     res.status(500).send('Internal server error');
   } finally {
     client.release();

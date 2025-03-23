@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>User Management (Modal)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h1>User Management</h1>
+
+      <!-- ปุ่ม Add User -->
+      <button
+        class="btn btn-primary mb-3"
+        data-bs-toggle="modal"
+        data-bs-target="#userModal"
+        onclick="openAddUserModal()"
+      >
+        Add User
+      </button>
+
+      <!-- ตารางแสดงผู้ใช้ -->
+      <table class="table table-bordered table-striped table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Company</th>
+            <th>Role</th>
+            <th>View Map</th>
+            <th>Create Staff</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (users.length === 0) { %>
+            <tr>
+              <td colspan="7" class="text-center">No users found.</td>
+            </tr>
+          <% } else { %>
+            <% users.forEach(user => { %>
+              <tr>
+                <td><%= user.user_id %></td>
+                <td><%= user.username %></td>
+                <td><%= user.company_name %></td>
+                <td><%= user.role %></td>
+                <td><%= user.view_map ? 'Yes' : 'No' %></td>
+                <td><%= user.create_staff ? 'Yes' : 'No' %></td>
+                <td>
+                  <!-- ปุ่ม Edit -->
+                  <button
+                    class="btn btn-sm btn-warning"
+                    data-bs-toggle="modal"
+                    data-bs-target="#userModal"
+                    onclick="openEditUserModal(
+                      <%= user.user_id %>,
+                      '<%= user.username %>',
+                      '<%= user.password %>',
+                      '<%= user.role %>',
+                      <%= user.company_id %>,
+                      <%= user.view_map ? 'true' : 'false' %>,
+                      <%= user.create_staff ? 'true' : 'false' %>
+                    )"
+                  >
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal (ใช้ตัวเดียว สำหรับ Add และ Edit) -->
+    <div
+      class="modal fade"
+      id="userModal"
+      tabindex="-1"
+      aria-labelledby="userModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="userForm" method="POST">
+            <div class="modal-header">
+              <h5 class="modal-title" id="userModalLabel">Add User</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <!-- Hidden input สำหรับเก็บ user_id (ถ้าเป็น edit) -->
+              <input type="hidden" id="userId" />
+
+              <div class="mb-3">
+                <label for="username" class="form-label">Username:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="username"
+                  name="username"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="password" class="form-label">Password:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="password"
+                  name="password"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="role" class="form-label">Role:</label>
+                <select class="form-select" id="role" name="role">
+                  <option value="super_admin">super_admin</option>
+                  <option value="customer_admin">customer_admin</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="company_id" class="form-label">Company:</label>
+                <select class="form-select" id="company_id" name="company_id">
+                  <% companies.forEach(comp => { %>
+                    <option value="<%= comp.id %>"><%= comp.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="form-check mb-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="view_map"
+                  name="view_map"
+                />
+                <label class="form-check-label" for="view_map">
+                  View Map
+                </label>
+              </div>
+
+              <div class="form-check mb-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="create_staff"
+                  name="create_staff"
+                />
+                <label class="form-check-label" for="create_staff">
+                  Create Staff
+                </label>
+              </div>
+
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
+
+    <script>
+      // ฟังก์ชันเปิด Modal ในโหมด Add User
+      function openAddUserModal() {
+        // ตั้ง Title ของ Modal
+        document.getElementById('userModalLabel').textContent = 'Add User';
+        // ตั้ง action ของ form => /management/user/add (POST)
+        document.getElementById('userForm').action = '/management/user/add';
+
+        // เคลียร์ค่าในฟอร์ม
+        document.getElementById('userId').value = '';
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('role').value = 'customer_admin';
+        document.getElementById('company_id').selectedIndex = 0;
+        document.getElementById('view_map').checked = false;
+        document.getElementById('create_staff').checked = false;
+      }
+
+      // ฟังก์ชันเปิด Modal ในโหมด Edit User
+      function openEditUserModal(
+        userId,
+        username,
+        password,
+        role,
+        company_id,
+        view_map,
+        create_staff
+      ) {
+        // ตั้ง Title ของ Modal
+        document.getElementById('userModalLabel').textContent = 'Edit User';
+        // ตั้ง action ของ form => /management/user/edit/:id
+        document.getElementById('userForm').action = '/management/user/edit/' + userId;
+
+        // ใส่ค่าในฟอร์ม
+        document.getElementById('userId').value = userId;
+        document.getElementById('username').value = username;
+        document.getElementById('password').value = password;
+        document.getElementById('role').value = role;
+        document.getElementById('company_id').value = company_id;
+        document.getElementById('view_map').checked = (view_map === true);
+        document.getElementById('create_staff').checked = (create_staff === true);
+      }
+    </script>
+  </body>
+</html>
