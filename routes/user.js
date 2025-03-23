@@ -82,6 +82,13 @@ router.post('/add', async (req, res) => {
 
     res.redirect('/management/user');
   } catch (error) {
+    // ถ้าฐานข้อมูลโยน error เพราะ username ซ้ำ (unique constraint)
+    if (error.code === '23505') {
+      // แจ้งเตือน user ซ้ำ
+      return res.status(400).send('Username already exists');
+      // หรือส่ง JSON ตามต้องการ
+      // return res.status(400).json({ Status: 'Error', message: 'Username already exists' });
+    }
     console.error('Error adding user:', error);
     res.status(500).send('Internal server error');
   } finally {
