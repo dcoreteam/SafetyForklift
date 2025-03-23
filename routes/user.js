@@ -18,15 +18,23 @@ const pool = new Pool({
 router.get('/', async (req, res) => {
   const client = await pool.connect();
   try {
-    // ดึงข้อมูลผู้ใช้ที่ยังไม่ถูกลบ (deleted_at IS NULL)
-    const result = await client.query(`
-      SELECT *
-      FROM users
-      WHERE deleted_at IS NULL
-      ORDER BY id ASC
-    `);
+    // JOIN ตาราง users กับ company เพื่อดึง company.name มาแสดง
+    const query = `
+      SELECT
+        u.id AS user_id,
+        u.username,
+        c.name AS company_name,
+        u.view_map,
+        u.create_staff
+      FROM users u
+      JOIN company c ON u.company_id = c.id
+      WHERE u.deleted_at IS NULL
+      ORDER BY u.id ASC
+    `;
+    const result = await client.query(query);
     const users = result.rows;
 
+    // ส่งไป render หน้า EJS ชื่อ user_list
     res.render('user_list', { users });
   } catch (error) {
     console.error('Error fetching users:', error);
