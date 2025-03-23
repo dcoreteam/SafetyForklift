@@ -24,6 +24,9 @@ app.use('/management/staff', staffRoutes);
 const fleetRoutes = require('./routes/fleet');
 app.use('/management/fleet', fleetRoutes);
 
+const shiftTimeRoutes = require('./routes/shift_time');
+app.use('/management/shift_time', shiftTimeRoutes);
+
 const pool = new Pool({
     user: 'palm',
     password: 'qwer1234',

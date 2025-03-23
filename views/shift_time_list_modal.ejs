@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Time Shift Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
+  </head>
+  <body>
+    <!-- เรียกใช้ Partial Navbar -->
+    <%- include('partials/navbar') %>
+    
+    <div class="container mt-4">
+      <h1>Time Shift Management</h1>
+
+      <!-- ปุ่ม Add Time Shift -->
+      <button
+        class="btn btn-primary mb-3"
+        data-bs-toggle="modal"
+        data-bs-target="#shiftTimeModal"
+        onclick="openAddShiftTimeModal()"
+      >
+        Add Time Shift
+      </button>
+
+      <!-- ตารางแสดง Shift Time -->
+      <table class="table table-bordered table-striped table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Shift Name</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Sites</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (shiftTimes.length === 0) { %>
+            <tr>
+              <td colspan="6" class="text-center">No shift time found.</td>
+            </tr>
+          <% } else { %>
+            <% shiftTimes.forEach(st => { %>
+              <tr>
+                <td><%= st.shift_time_id %></td>
+                <td><%= st.shift_time_name %></td>
+                <td><%= st.start_time %></td>
+                <td><%= st.end_time %></td>
+                <!-- แสดง Sites เป็นชื่อรวมกัน (site_names) -->
+                <td>
+                  <% if (st.site_names && st.site_names.length > 0) { %>
+                    <%= st.site_names.join(', ') %>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
+                <td>
+                  <!-- ปุ่ม Edit -->
+                  <button
+                    class="btn btn-sm btn-warning"
+                    data-bs-toggle="modal"
+                    data-bs-target="#shiftTimeModal"
+                    onclick="openEditShiftTimeModal(
+                      <%= st.shift_time_id %>,
+                      '<%= st.shift_time_name.replace(/'/g, '\\\'') %>',
+                      '<%= st.start_time %>',
+                      '<%= st.end_time %>',
+                      <%- JSON.stringify(st.site_ids || []) %>
+                    )"
+                  >
+                    Edit
+                  </button>
+                  <!-- ปุ่ม Delete -->
+                  <form
+                    action="/management/shift_time/delete/<%= st.shift_time_id %>"
+                    method="POST"
+                    class="d-inline"
+                    onsubmit="return confirm('Are you sure you want to delete this shift time?');"
+                  >
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal สำหรับ Add/Edit Shift Time -->
+    <div
+      class="modal fade"
+      id="shiftTimeModal"
+      tabindex="-1"
+      aria-labelledby="shiftTimeModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="shiftTimeForm" method="POST">
+            <div class="modal-header">
+              <h5 class="modal-title" id="shiftTimeModalLabel">Add Shift Time</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="shiftTimeId" />
+
+              <div class="mb-3">
+                <label for="name" class="form-label">Shift Name:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="name"
+                  name="name"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="start_time" class="form-label">Start Time:</label>
+                <input
+                  type="time"
+                  class="form-control"
+                  id="start_time"
+                  name="start_time"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="end_time" class="form-label">End Time:</label>
+                <input
+                  type="time"
+                  class="form-control"
+                  id="end_time"
+                  name="end_time"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="site_ids" class="form-label">Sites:</label>
+                <!-- multiple select สำหรับเลือกหลาย Site -->
+                <select
+                  class="form-select"
+                  id="site_ids"
+                  name="site_ids"
+                  multiple
+                >
+                  <% sites.forEach(si => { %>
+                    <option value="<%= si.id %>"><%= si.name %></option>
+                  <% }) %>
+                </select>
+                <small class="text-muted">Hold Ctrl (Windows) or Command (Mac) to select multiple</small>
+              </div>
+
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
+
+    <script>
+      // ฟังก์ชันเปิด Modal ในโหมด Add Shift Time
+      function openAddShiftTimeModal() {
+        document.getElementById('shiftTimeModalLabel').textContent = 'Add Shift Time';
+        document.getElementById('shiftTimeForm').action = '/management/shift_time/add';
+
+        // เคลียร์ฟอร์ม
+        document.getElementById('shiftTimeId').value = '';
+        document.getElementById('name').value = '';
+        document.getElementById('start_time').value = '';
+        document.getElementById('end_time').value = '';
+        // เคลียร์ multiple select
+        const siteSelect = document.getElementById('site_ids');
+        for (let i = 0; i < siteSelect.options.length; i++) {
+          siteSelect.options[i].selected = false;
+        }
+      }
+
+      // ฟังก์ชันเปิด Modal ในโหมด Edit Shift Time
+      // siteIds เป็น Array ของ site_id
+      function openEditShiftTimeModal(
+        shiftTimeId,
+        shiftTimeName,
+        startTime,
+        endTime,
+        siteIds
+      ) {
+        document.getElementById('shiftTimeModalLabel').textContent = 'Edit Shift Time';
+        document.getElementById('shiftTimeForm').action = '/management/shift_time/edit/' + shiftTimeId;
+
+        document.getElementById('shiftTimeId').value = shiftTimeId;
+        document.getElementById('name').value = shiftTimeName;
+        document.getElementById('start_time').value = startTime;
+        document.getElementById('end_time').value = endTime;
+
+        // set multiple select
+        const siteSelect = document.getElementById('site_ids');
+        // เคลียร์ก่อน
+        for (let i = 0; i < siteSelect.options.length; i++) {
+          siteSelect.options[i].selected = false;
+        }
+        // เลือก siteIds
+        siteIds.forEach(siteId => {
+          for (let i = 0; i < siteSelect.options.length; i++) {
+            if (parseInt(siteSelect.options[i].value) === siteId) {
+              siteSelect.options[i].selected = true;
+              break;
+            }
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
