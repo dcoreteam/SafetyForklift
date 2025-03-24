@@ -33,6 +33,9 @@ app.use('/management/site', siteRoutes);
 const cardRoutes = require('./routes/card');
 app.use('/management/card', cardRoutes);
 
+const impactRoutes = require('./routes/impact');
+app.use('/reports/impact', impactRoutes);
+
 const pool = new Pool({
     user: 'palm',
     password: 'qwer1234',

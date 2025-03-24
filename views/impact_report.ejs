@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Impact Report</title>
+    <!-- Bootstrap 5 CSS via CDN -->
+    <!--link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"-->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <!-- เรียกใช้ Partial Navbar -->
+    <%- include('partials/navbar') %>
+
+    <div class="container-fluid mt-4">
+      <h1>Impact Report</h1>
+
+      <!-- ฟอร์มกรอง -->
+      <form method="GET" action="/reports/impact" class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Forklift:</label>
+          <select name="forklift_id" class="form-select">
+            <option value="">-- All --</option>
+            <% forklifts.forEach(f => { %>
+              <option
+                value="<%= f.id %>"
+                <%= (filters.forklift_id == f.id) ? 'selected' : '' %>
+              >
+                <%= f.vehicle_name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Staff:</label>
+          <select name="staff_id" class="form-select">
+            <option value="">-- All --</option>
+            <% staffs.forEach(st => { %>
+              <option
+                value="<%= st.id %>"
+                <%= (filters.staff_id == st.id) ? 'selected' : '' %>
+              >
+                <%= st.name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Severity:</label>
+          <select name="severity" class="form-select">
+            <option value="">-- All --</option>
+            <% severityOptions.forEach(sv => { %>
+              <option
+                value="<%= sv %>"
+                <%= (filters.severity == sv) ? 'selected' : '' %>
+              >
+                <%= sv %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Start Date:</label>
+          <input
+            type="date"
+            name="start_date"
+            class="form-control"
+            value="<%= filters.start_date || '' %>"
+          />
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">End Date:</label>
+          <input
+            type="date"
+            name="end_date"
+            class="form-control"
+            value="<%= filters.end_date || '' %>"
+          />
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary me-2">Filter</button>
+          <a href="/reports/impact" class="btn btn-secondary">Reset</a>
+        </div>
+      </form>
+
+      <!-- ตารางแสดงผล -->
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Forklift</th>
+            <th>Staff</th>
+            <th>Severity</th>
+            <th>G-Force</th>
+            <th>Location</th>
+            <th>Occurred At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (impacts.length === 0) { %>
+            <tr>
+              <td colspan="7" class="text-center">No records found.</td>
+            </tr>
+          <% } else { %>
+            <% impacts.forEach(imp => { %>
+              <tr>
+                <td><%= imp.impact_id %></td>
+                <td><%= imp.forklift_name %></td>
+                <td><%= imp.staff_name %></td>
+                <td><%= imp.severity %></td>
+                <td><%= imp.g_force %></td>
+                <td><%= imp.location || '' %></td>
+                <td><%= imp.occurred_at %></td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bootstrap 5 JS via CDN -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
+  </body>
+</html>
