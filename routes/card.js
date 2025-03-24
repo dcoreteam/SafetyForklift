@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
       SELECT
         c.id AS card_id,
         c.uid,
-        c.issue_date,
+        TO_CHAR(c.issue_date, 'YYYY-MM-DD') AS issue_date,
         c.status,
         s.id AS staff_id,
         s.name AS staff_name
