@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Card Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <!--link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"-->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h1>Card Management</h1>
+
+      <!-- ปุ่ม Add Card -->
+      <button
+        class="btn btn-primary mb-3"
+        data-bs-toggle="modal"
+        data-bs-target="#cardModal"
+        onclick="openAddCardModal()"
+      >
+        Add Card
+      </button>
+
+      <!-- ตารางแสดง Card -->
+      <table class="table table-bordered table-striped table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>UID</th>
+            <th>Issue Date</th>
+            <th>Status</th>
+            <th>Assigned Staff</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (cards.length === 0) { %>
+            <tr>
+              <td colspan="6" class="text-center">No card found.</td>
+            </tr>
+          <% } else { %>
+            <% cards.forEach(cd => { %>
+              <tr>
+                <td><%= cd.card_id %></td>
+                <td><%= cd.uid || '' %></td>
+                <td><%= cd.issue_date %></td>
+                <td><%= cd.status || '' %></td>
+                <td><%= cd.staff_name %></td>
+                <td>
+                  <!-- ปุ่ม Edit -->
+                  <button
+                    class="btn btn-sm btn-warning"
+                    data-bs-toggle="modal"
+                    data-bs-target="#cardModal"
+                    onclick="openEditCardModal(
+                      <%= cd.card_id %>,
+                      <%= cd.staff_id %>,
+                      '<%= cd.issue_date %>',
+                      '<%= cd.status ? cd.status.replace(/'/g, '\\\'') : '' %>',
+                      '<%= cd.uid ? cd.uid.replace(/'/g, '\\\'') : '' %>'
+                    )"
+                  >
+                    Edit
+                  </button>
+                  <!-- ปุ่ม Delete -->
+                  <form
+                    action="/management/card/delete/<%= cd.card_id %>"
+                    method="POST"
+                    class="d-inline"
+                    onsubmit="return confirm('Are you sure you want to delete this card?');"
+                  >
+                    <button type="submit" class="btn btn-sm btn-danger">
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal สำหรับ Add/Edit Card -->
+    <div
+      class="modal fade"
+      id="cardModal"
+      tabindex="-1"
+      aria-labelledby="cardModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="cardForm" method="POST">
+            <div class="modal-header">
+              <h5 class="modal-title" id="cardModalLabel">Add Card</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="cardId" />
+
+              <div class="mb-3">
+                <label for="assigned_staff_id" class="form-label">Assigned Staff:</label>
+                <select
+                  class="form-select"
+                  id="assigned_staff_id"
+                  name="assigned_staff_id"
+                >
+                  <% staffs.forEach(st => { %>
+                    <option value="<%= st.id %>"><%= st.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="issue_date" class="form-label">Issue Date:</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="issue_date"
+                  name="issue_date"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="status" class="form-label">Status:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="status"
+                  name="status"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="uid" class="form-label">UID:</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="uid"
+                  name="uid"
+                />
+              </div>
+
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
+
+    <script>
+      // ฟังก์ชันเปิด Modal ในโหมด Add Card
+      function openAddCardModal() {
+        document.getElementById('cardModalLabel').textContent = 'Add Card';
+        document.getElementById('cardForm').action = '/management/card/add';
+
+        // เคลียร์ฟอร์ม
+        document.getElementById('cardId').value = '';
+        document.getElementById('assigned_staff_id').selectedIndex = 0;
+        document.getElementById('issue_date').value = '';
+        document.getElementById('status').value = '';
+        document.getElementById('uid').value = '';
+      }
+
+      // ฟังก์ชันเปิด Modal ในโหมด Edit Card
+      function openEditCardModal(
+        cardId,
+        staffId,
+        issueDate,
+        status,
+        uid
+      ) {
+        document.getElementById('cardModalLabel').textContent = 'Edit Card';
+        document.getElementById('cardForm').action = '/management/card/edit/' + cardId;
+
+        document.getElementById('cardId').value = cardId;
+        document.getElementById('assigned_staff_id').value = staffId;
+        document.getElementById('issue_date').value = issueDate;
+        document.getElementById('status').value = status;
+        document.getElementById('uid').value = uid;
+      }
+    </script>
+  </body>
+</html>

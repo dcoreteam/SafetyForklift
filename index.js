@@ -30,6 +30,9 @@ app.use('/management/shift_time', shiftTimeRoutes);
 const siteRoutes = require('./routes/site');
 app.use('/management/site', siteRoutes);
 
+const cardRoutes = require('./routes/card');
+app.use('/management/card', cardRoutes);
+
 const pool = new Pool({
     user: 'palm',
     password: 'qwer1234',
