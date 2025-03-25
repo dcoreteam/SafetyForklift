@@ -116,6 +116,7 @@ router.post('/add', upload.single('image'), async (req, res) => {
     let imageBuffer = null;
     if (req.file) {
       // อ่านไฟล์จาก path ชั่วคราว
+      console.log(req.file.path);
       imageBuffer = fs.readFileSync(req.file.path);
     }
 
