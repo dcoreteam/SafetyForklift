@@ -183,6 +183,7 @@ router.post('/edit/:id', async (req, res) => {
     company_code    // รับค่าจากฟอร์ม
   } = req.body;
 
+  console.log(req.body);
   const client = await pool.connect();
   try {
     const updateQuery = `
