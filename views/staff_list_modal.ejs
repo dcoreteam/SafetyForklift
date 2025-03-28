@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Staff Management</title>
-    <!-- Bootstrap 5 CSS (Bootswatch Slate) -->
+    <!-- Bootswatch Slate Theme -->
     <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
   </head>
   <body>
@@ -174,12 +174,8 @@
 
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                Close
-              </button>
-              <button type="submit" class="btn btn-primary" id="submitBtn">
-                Save
-              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">Save</button>
             </div>
           </form>
         </div>
@@ -199,7 +195,7 @@
         document.getElementById('name').value = '';
         document.getElementById('job_title').value = '';
         document.getElementById('department').value = '';
-        document.getElementById('company_code').value = '';
+        document.getElementById('company_code').value = ''; // เคลียร์ค่า employee code
         document.getElementById('company_id').selectedIndex = 0;
         document.getElementById('address').value = '';
         document.getElementById('phone_no').value = '';
@@ -247,7 +243,7 @@
           document.getElementById('shift_time_id').selectedIndex = 0;
         }
         document.getElementById('department').value = department;
-        document.getElementById('company_code').value = company_code;
+        document.getElementById('company_code').value = company_code; // แสดง employee code
 
         // แสดงรูปภาพเดิม
         const imgContainer = document.getElementById('imagePreviewContainer');
