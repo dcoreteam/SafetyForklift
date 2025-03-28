@@ -168,7 +168,7 @@ router.post('/add', upload.single('image'), async (req, res) => {
 /* -----------------------------------------
    3) แก้ไข Staff (Edit) (POST /management/staff/edit/:id)
 ------------------------------------------*/
-router.post('/edit/:id', async (req, res) => {
+router.post('/edit/:id', upload.single('image'), async (req, res) => {
   const staffId = req.params.id;
   const {
     name,
@@ -180,42 +180,89 @@ router.post('/edit/:id', async (req, res) => {
     site_id,
     shift_time_id,
     department,
-    company_code    // รับค่าจากฟอร์ม
+    company_code
   } = req.body;
 
-  console.log(req.body);
   const client = await pool.connect();
   try {
-    const updateQuery = `
-      UPDATE staff
-      SET
-        name = $1,
-        job_title = $2,
-        company_id = $3,
-        address = $4,
-        phone_no = $5,
-        email = $6,
-        site_id = $7,
-        shift_time_id = $8,
-        department = $9,
-        company_code = $10,   -- อัปเดต company_code
-        updated_at = NOW()
-      WHERE id = $11
-        AND deleted_at IS NULL
-    `;
-    await client.query(updateQuery, [
-      name,
-      job_title,
-      company_id,
-      address,
-      phone_no,
-      email,
-      site_id || null,
-      shift_time_id || null,
-      department,
-      company_code,   // ส่งค่า company_code
-      staffId
-    ]);
+    let updateQuery;
+    let queryParams;
+    
+    if (req.file) {
+      // ถ้ามีการอัปโหลดรูปใหม่ ให้อ่านไฟล์และอัปเดตคอลัมน์ image ด้วย
+      const imageBuffer = fs.readFileSync(req.file.path);
+      updateQuery = `
+        UPDATE staff
+        SET
+          name = $1,
+          job_title = $2,
+          company_id = $3,
+          address = $4,
+          phone_no = $5,
+          email = $6,
+          site_id = $7,
+          shift_time_id = $8,
+          department = $9,
+          company_code = $10,
+          image = $11,
+          updated_at = NOW()
+        WHERE id = $12
+          AND deleted_at IS NULL
+      `;
+      queryParams = [
+        name,
+        job_title,
+        company_id,
+        address,
+        phone_no,
+        email,
+        site_id || null,
+        shift_time_id || null,
+        department,
+        company_code,
+        imageBuffer,
+        staffId
+      ];
+    } else {
+      // ถ้าไม่มีการอัปโหลดรูปใหม่ ไม่อัปเดตคอลัมน์ image
+      updateQuery = `
+        UPDATE staff
+        SET
+          name = $1,
+          job_title = $2,
+          company_id = $3,
+          address = $4,
+          phone_no = $5,
+          email = $6,
+          site_id = $7,
+          shift_time_id = $8,
+          department = $9,
+          company_code = $10,
+          updated_at = NOW()
+        WHERE id = $11
+          AND deleted_at IS NULL
+      `;
+      queryParams = [
+        name,
+        job_title,
+        company_id,
+        address,
+        phone_no,
+        email,
+        site_id || null,
+        shift_time_id || null,
+        department,
+        company_code,
+        staffId
+      ];
+    }
+    
+    await client.query(updateQuery, queryParams);
+
+    // ลบไฟล์ temp ถ้ามี
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
 
     res.redirect('/management/staff');
   } catch (error) {
