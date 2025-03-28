@@ -34,7 +34,7 @@ const upload = multer({
 router.get('/', async (req, res) => {
   const client = await pool.connect();
   try {
-    // JOIN ตาราง company, site, shift_time เพื่อแสดงชื่อ
+    // JOIN ตาราง staff กับ company, site, shift_time
     const query = `
       SELECT
         s.id AS staff_id,
@@ -44,6 +44,7 @@ router.get('/', async (req, res) => {
         s.email,
         s.department,
         s.address,
+        s.company_code,             -- เพิ่มฟิลด์ company_code
         c.name AS company_name,
         c.id AS company_id,
         si.name AS site_name,
@@ -60,7 +61,7 @@ router.get('/', async (req, res) => {
     const result = await client.query(query);
     const staffs = result.rows;
 
-    // ดึงรายชื่อ company, site, shift_time (สำหรับ dropdown)
+    // ดึงข้อมูลสำหรับ dropdown ของ company, site, shift_time
     const companyResult = await client.query(`
       SELECT id, name
       FROM company
@@ -84,7 +85,6 @@ router.get('/', async (req, res) => {
     const sites = siteResult.rows;
     const shiftTimes = shiftTimeResult.rows;
 
-    // render หน้า staff_list_modal.ejs
     res.render('staff_list_modal', { staffs, companies, sites, shiftTimes });
   } catch (error) {
     console.error('Error fetching staff:', error);
@@ -107,7 +107,8 @@ router.post('/add', upload.single('image'), async (req, res) => {
     email,
     site_id,
     shift_time_id,
-    department
+    department,
+    company_code    // รับค่าจากฟอร์ม
   } = req.body;
 
   const client = await pool.connect();
@@ -115,27 +116,27 @@ router.post('/add', upload.single('image'), async (req, res) => {
     // เตรียม buffer สำหรับเก็บรูป (bytea)
     let imageBuffer = null;
     if (req.file) {
-      // อ่านไฟล์จาก path ชั่วคราว
       imageBuffer = fs.readFileSync(req.file.path);
     }
 
     const insertQuery = `
-        INSERT INTO staff (
-          name,
-          job_title,
-          company_id,
-          address,
-          phone_no,
-          email,
-          site_id,
-          shift_time_id,
-          department,
-          image,          -- เก็บรูปลงคอลัมน์ image (bytea)
-          created_at,
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-      `;
+      INSERT INTO staff (
+        name,
+        job_title,
+        company_id,
+        address,
+        phone_no,
+        email,
+        site_id,
+        shift_time_id,
+        department,
+        image,
+        company_code,    -- เพิ่มคอลัมน์นี้
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+    `;
     await client.query(insertQuery, [
       name,
       job_title,
@@ -146,10 +147,11 @@ router.post('/add', upload.single('image'), async (req, res) => {
       site_id || null,
       shift_time_id || null,
       department,
-      imageBuffer
+      imageBuffer,
+      company_code   // ส่งค่าที่ได้รับจากฟอร์ม
     ]);
 
-    // ลบไฟล์ tmp ออกจาก 'uploads/' ถ้าไม่ต้องการเก็บไว้
+    // ลบไฟล์ tmp ถ้ามี
     if (req.file) {
       fs.unlinkSync(req.file.path);
     }
@@ -162,7 +164,6 @@ router.post('/add', upload.single('image'), async (req, res) => {
     client.release();
   }
 });
-
 
 /* -----------------------------------------
    3) แก้ไข Staff (Edit) (POST /management/staff/edit/:id)
@@ -178,7 +179,8 @@ router.post('/edit/:id', async (req, res) => {
     email,
     site_id,
     shift_time_id,
-    department
+    department,
+    company_code    // รับค่าจากฟอร์ม
   } = req.body;
 
   const client = await pool.connect();
@@ -195,8 +197,9 @@ router.post('/edit/:id', async (req, res) => {
         site_id = $7,
         shift_time_id = $8,
         department = $9,
+        company_code = $10,   -- อัปเดต company_code
         updated_at = NOW()
-      WHERE id = $10
+      WHERE id = $11
         AND deleted_at IS NULL
     `;
     await client.query(updateQuery, [
@@ -209,6 +212,7 @@ router.post('/edit/:id', async (req, res) => {
       site_id || null,
       shift_time_id || null,
       department,
+      company_code,   // ส่งค่า company_code
       staffId
     ]);
 
