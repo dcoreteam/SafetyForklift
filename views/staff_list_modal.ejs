@@ -1,24 +1,20 @@
 <!DOCTYPE html>
 <html data-bs-theme="light">
-
-<head>
-  <meta charset="UTF-8" />
-  <title>Staff Management</title>
-  <!-- Bootstrap 5 CSS -->
-  <!--link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"-->
-  <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
-</head>
-
-<body>
-  <!-- เรียกใช้ Partial Navbar -->
-  <%- include('partials/navbar') %>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Staff Management</title>
+    <!-- Bootstrap 5 CSS (Bootswatch Slate) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <!-- เรียกใช้ Partial Navbar -->
+    <%- include('partials/navbar') %>
 
     <div class="container-fluid mt-4">
       <h1>Staff Management</h1>
 
       <!-- ปุ่ม Add Staff -->
-      <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#staffModal"
-        onclick="openAddStaffModal()">
+      <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#staffModal" onclick="openAddStaffModal()">
         Add Staff
       </button>
 
@@ -35,47 +31,31 @@
             <th>Site</th>
             <th>Shift Time</th>
             <th>Department</th>
+            <th>Employee Code</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <% if (staffs.length===0) { %>
+          <% if (staffs.length === 0) { %>
             <tr>
-              <td colspan="10" class="text-center">No staff found.</td>
+              <td colspan="11" class="text-center">No staff found.</td>
             </tr>
-            <% } else { %>
-              <% staffs.forEach(staff=> { %>
-                <tr>
-                  <td>
-                    <%= staff.staff_id %>
-                  </td>
-                  <td>
-                    <%= staff.staff_name %>
-                  </td>
-                  <td>
-                    <%= staff.job_title || '' %>
-                  </td>
-                  <td>
-                    <%= staff.phone_no || '' %>
-                  </td>
-                  <td>
-                    <%= staff.email || '' %>
-                  </td>
-                  <td>
-                    <%= staff.company_name %>
-                  </td>
-                  <td>
-                    <%= staff.site_name || '' %>
-                  </td>
-                  <td>
-                    <%= staff.shift_time_name || '' %>
-                  </td>
-                  <td>
-                    <%= staff.department || '' %>
-                  </td>
-                  <td>
-                    <!-- ปุ่ม Edit -->
-                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#staffModal" onclick="openEditStaffModal(
+          <% } else { %>
+            <% staffs.forEach(staff => { %>
+              <tr>
+                <td><%= staff.staff_id %></td>
+                <td><%= staff.staff_name %></td>
+                <td><%= staff.job_title || '' %></td>
+                <td><%= staff.phone_no || '' %></td>
+                <td><%= staff.email || '' %></td>
+                <td><%= staff.company_name %></td>
+                <td><%= staff.site_name || '' %></td>
+                <td><%= staff.shift_time_name || '' %></td>
+                <td><%= staff.department || '' %></td>
+                <td><%= staff.company_code || '' %></td>
+                <td>
+                  <!-- ปุ่ม Edit -->
+                  <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#staffModal" onclick="openEditStaffModal(
                       <%= staff.staff_id %>,
                       '<%= staff.staff_name.replace(/'/g, '\\\'') %>',
                       '<%= staff.job_title ? staff.job_title.replace(/'/g, '\\\'') : '' %>',
@@ -85,19 +65,19 @@
                       '<%= staff.email ? staff.email.replace(/'/g, '\\\'') : '' %>',
                       <%= staff.site_id ? staff.site_id : 'null' %>,
                       <%= staff.shift_time_id ? staff.shift_time_id : 'null' %>,
-                      '<%= staff.department ? staff.department.replace(/'/g, '\\\'') : '' %>'
+                      '<%= staff.department ? staff.department.replace(/'/g, '\\\'') : '' %>',
+                      '<%= staff.company_code ? staff.company_code.replace(/'/g, '\\\'') : '' %>'
                     )">
-                      Edit
-                    </button>
-                    <!-- ปุ่ม Delete -->
-                    <form action="/management/staff/delete/<%= staff.staff_id %>" method="POST" class="d-inline"
-                      onsubmit="return confirm('Are you sure you want to delete this staff?');">
-                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                    </form>
-                  </td>
-                </tr>
-                <% }) %>
-                  <% } %>
+                    Edit
+                  </button>
+                  <!-- ปุ่ม Delete -->
+                  <form action="/management/staff/delete/<%= staff.staff_id %>" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this staff?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
         </tbody>
       </table>
     </div>
@@ -129,14 +109,18 @@
                 <input type="text" class="form-control" id="department" name="department" />
               </div>
 
+              <!-- ช่องรหัสพนักงาน (Employee Code) -->
+              <div class="mb-3">
+                <label for="company_code" class="form-label">Employee Code:</label>
+                <input type="text" class="form-control" id="company_code" name="company_code" />
+              </div>
+
               <div class="mb-3">
                 <label for="company_id" class="form-label">Company:</label>
                 <select class="form-select" id="company_id" name="company_id">
-                  <% companies.forEach(c=> { %>
-                    <option value="<%= c.id %>">
-                      <%= c.name %>
-                    </option>
-                    <% }) %>
+                  <% companies.forEach(c => { %>
+                    <option value="<%= c.id %>"><%= c.name %></option>
+                  <% }) %>
                 </select>
               </div>
 
@@ -159,11 +143,9 @@
                 <label for="site_id" class="form-label">Site:</label>
                 <select class="form-select" id="site_id" name="site_id">
                   <option value="">-- None --</option>
-                  <% sites.forEach(s=> { %>
-                    <option value="<%= s.id %>">
-                      <%= s.name %>
-                    </option>
-                    <% }) %>
+                  <% sites.forEach(s => { %>
+                    <option value="<%= s.id %>"><%= s.name %></option>
+                  <% }) %>
                 </select>
               </div>
 
@@ -171,11 +153,9 @@
                 <label for="shift_time_id" class="form-label">Shift Time:</label>
                 <select class="form-select" id="shift_time_id" name="shift_time_id">
                   <option value="">-- None --</option>
-                  <% shiftTimes.forEach(st=> { %>
-                    <option value="<%= st.id %>">
-                      <%= st.name %>
-                    </option>
-                    <% }) %>
+                  <% shiftTimes.forEach(st => { %>
+                    <option value="<%= st.id %>"><%= st.name %></option>
+                  <% }) %>
                 </select>
               </div>
 
@@ -183,8 +163,7 @@
               <div class="mb-3" id="imagePreviewContainer" style="display: none;">
                 <label class="form-label">Current Image:</label>
                 <div>
-                  <img id="staffImagePreview" src="" alt="Staff Image"
-                    style="max-width: 100%; height: auto; border: 1px solid #ccc;" />
+                  <img id="staffImagePreview" src="" alt="Staff Image" style="max-width: 100%; height: auto; border: 1px solid #ccc;" />
                 </div>
               </div>
 
@@ -207,11 +186,11 @@
       </div>
     </div>
 
-    <!-- Bootstrap 5 JS -->
+    <!-- Bootstrap 5 JS via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-      // ฟังก์ชัน Add Staff (เคลียร์ฟอร์ม + ซ่อนรูป)
+      // ฟังก์ชันเปิด Modal ในโหมด Add Staff
       function openAddStaffModal() {
         document.getElementById('staffModalLabel').textContent = 'Add Staff';
         document.getElementById('staffForm').action = '/management/staff/add';
@@ -219,19 +198,21 @@
         document.getElementById('staffId').value = '';
         document.getElementById('name').value = '';
         document.getElementById('job_title').value = '';
+        document.getElementById('department').value = '';
+        document.getElementById('company_code').value = '';
         document.getElementById('company_id').selectedIndex = 0;
         document.getElementById('address').value = '';
         document.getElementById('phone_no').value = '';
         document.getElementById('email').value = '';
         document.getElementById('site_id').selectedIndex = 0;
         document.getElementById('shift_time_id').selectedIndex = 0;
-        document.getElementById('department').value = '';
 
         // ซ่อนรูปภาพ
         document.getElementById('imagePreviewContainer').style.display = 'none';
         document.getElementById('staffImagePreview').src = '';
       }
 
+      // ฟังก์ชันเปิด Modal ในโหมด Edit Staff
       function openEditStaffModal(
         staffId,
         name,
@@ -242,7 +223,8 @@
         email,
         site_id,
         shift_time_id,
-        department
+        department,
+        company_code
       ) {
         document.getElementById('staffModalLabel').textContent = 'Edit Staff';
         document.getElementById('staffForm').action = '/management/staff/edit/' + staffId;
@@ -254,7 +236,6 @@
         document.getElementById('address').value = address;
         document.getElementById('phone_no').value = phone_no;
         document.getElementById('email').value = email;
-
         if (site_id) {
           document.getElementById('site_id').value = site_id;
         } else {
@@ -266,19 +247,14 @@
           document.getElementById('shift_time_id').selectedIndex = 0;
         }
         document.getElementById('department').value = department;
+        document.getElementById('company_code').value = company_code;
 
-        // === ส่วนเพิ่ม: แสดงรูปภาพเดิม ===
-        // สมมติว่า /getimage/[staff_id] เป็น API ที่ส่งรูป staff ถ้ามี
+        // แสดงรูปภาพเดิม
         const imgContainer = document.getElementById('imagePreviewContainer');
         const imgElement = document.getElementById('staffImagePreview');
-
-        // ตั้ง src เป็น /getimage/staffId
         imgElement.src = '/getimage/' + staffId;
-
-        // แสดง Container
         imgContainer.style.display = 'block';
       }
     </script>
-</body>
-
+  </body>
 </html>
