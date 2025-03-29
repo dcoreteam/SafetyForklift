@@ -1040,6 +1040,9 @@ app.get('/reports/shifts/export/excel', async (req, res) => {
 app.get('/admin', (req, res) => {
   // อาจตรวจสอบสิทธิ์ (Auth) ก่อน
   // if (!req.user || req.user.role !== 'admin') return res.redirect('/login');
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   res.render('admin_home');
 });
 
