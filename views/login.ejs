@@ -7,14 +7,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
   </head>
   <body>
-    <div class="container mt-5">
+    <div class="container mx-auto" style="width:400px">
       <h1 class="text-center mb-4">Admin Login</h1>
       <% if (error) { %>
         <div class="alert alert-danger" role="alert">
           <%= error %>
         </div>
       <% } %>
-      <form method="POST" action="/login" style="width:400px" class="mx-auto">
+      <form method="POST" action="/login">
         <div class="mb-3">
           <label for="username" class="form-label">Username:</label>
           <input type="text" class="form-control" id="username" name="username" required>
