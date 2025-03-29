@@ -62,6 +62,13 @@ app.use(session({
 const authRoutes = require('./routes/auth');
 app.use('/', authRoutes);
 
+app.get('/', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  res.render('dashboard', { user: req.session.user });
+});
+
 // ตัวอย่าง route อื่น ๆ ที่ต้องมีการตรวจสอบสิทธิ์
 function isAuthenticated(req, res, next) {
   if (req.session.user) {
