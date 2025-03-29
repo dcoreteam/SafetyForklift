@@ -16,6 +16,9 @@ const pool = new Pool({
    - JOIN กับ company เพื่อดึงชื่อบริษัท
 ------------------------------------------*/
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     const query = `

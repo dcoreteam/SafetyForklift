@@ -25,6 +25,9 @@ function generateCustomerCode() {
    1) แสดงรายการ Company (GET /management/company)
 ------------------------------------------*/
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     const query = `

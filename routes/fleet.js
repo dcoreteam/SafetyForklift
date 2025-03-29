@@ -15,6 +15,9 @@ const pool = new Pool({
    1) แสดงรายการ Fleet (GET /management/fleet)
 ------------------------------------------*/
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     // JOIN ตาราง company, site, checklist เพื่อแสดงชื่อ

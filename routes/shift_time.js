@@ -16,6 +16,9 @@ const pool = new Pool({
       - JOIN shift_time_site -> site เพื่อดึงรายชื่อ Sites ที่เกี่ยวข้อง
 ------------------------------------------*/
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     // Query เอา Shift Time ทั้งหมด (ที่ไม่ถูกลบ) พร้อม Sites

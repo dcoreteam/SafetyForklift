@@ -15,6 +15,9 @@ const pool = new Pool({
 
 // 1) แสดงรายการ User (พร้อม JOIN กับตาราง company ถ้าต้องการ)
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     const query = `

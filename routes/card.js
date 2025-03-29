@@ -16,6 +16,9 @@ const pool = new Pool({
    - JOIN กับ staff เพื่อดึงชื่อ staff
 ------------------------------------------*/
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     const query = `

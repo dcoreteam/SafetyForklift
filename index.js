@@ -890,6 +890,9 @@ function buildShiftQuery(filters) {
       พร้อมกรองข้อมูลตาม query string
 -------------------------------------------- */
 app.get('/reports/shifts', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     // ดึงค่า filters จาก query string

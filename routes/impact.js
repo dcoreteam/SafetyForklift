@@ -18,6 +18,9 @@ const pool = new Pool({
   - แสดงผลใน EJS
 */
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     // รับค่ากรองจาก query string

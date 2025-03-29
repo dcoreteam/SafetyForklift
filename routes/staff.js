@@ -32,6 +32,9 @@ const upload = multer({
    1) แสดงรายการ Staff (GET /management/staff)
 ------------------------------------------*/
 router.get('/', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
   const client = await pool.connect();
   try {
     // JOIN ตาราง staff กับ company, site, shift_time
