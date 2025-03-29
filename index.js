@@ -13,30 +13,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const userRoutes = require('./routes/user');
-app.use('/management/user', userRoutes);
-
-const companyRoutes = require('./routes/company');
-app.use('/management/company', companyRoutes);
-
-const staffRoutes = require('./routes/staff');
-app.use('/management/staff', staffRoutes);
-
-const fleetRoutes = require('./routes/fleet');
-app.use('/management/fleet', fleetRoutes);
-
-const shiftTimeRoutes = require('./routes/shift_time');
-app.use('/management/shift_time', shiftTimeRoutes);
-
-const siteRoutes = require('./routes/site');
-app.use('/management/site', siteRoutes);
-
-const cardRoutes = require('./routes/card');
-app.use('/management/card', cardRoutes);
-
-const impactRoutes = require('./routes/impact');
-app.use('/reports/impact', impactRoutes);
-
 const pool = new Pool({
   user: 'palm',
   password: 'qwer1234',
@@ -61,6 +37,30 @@ app.use(session({
 // Import routes login, logout, และ routes อื่น ๆ ที่ต้อง login
 const authRoutes = require('./routes/auth');
 app.use('/', authRoutes);
+
+const userRoutes = require('./routes/user');
+app.use('/management/user', userRoutes);
+
+const companyRoutes = require('./routes/company');
+app.use('/management/company', companyRoutes);
+
+const staffRoutes = require('./routes/staff');
+app.use('/management/staff', staffRoutes);
+
+const fleetRoutes = require('./routes/fleet');
+app.use('/management/fleet', fleetRoutes);
+
+const shiftTimeRoutes = require('./routes/shift_time');
+app.use('/management/shift_time', shiftTimeRoutes);
+
+const siteRoutes = require('./routes/site');
+app.use('/management/site', siteRoutes);
+
+const cardRoutes = require('./routes/card');
+app.use('/management/card', cardRoutes);
+
+const impactRoutes = require('./routes/impact');
+app.use('/reports/impact', impactRoutes);
 
 app.get('/', (req, res) => {
   if (!req.session.user) {
