@@ -66,7 +66,7 @@ app.get('/', (req, res) => {
   if (!req.session.user) {
     return res.redirect('/login');
   }
-  res.render('dashboard', { user: req.session.user });
+  res.render('admin_home', { user: req.session.user });
 });
 
 // ตัวอย่าง route อื่น ๆ ที่ต้องมีการตรวจสอบสิทธิ์
