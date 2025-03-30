@@ -173,17 +173,7 @@
       function initMap(lat = 13.124328, lng = 100.984279) {
         // สร้าง map ถ้ายังไม่มี
         if (!map) {
-          map = L.map('map').setView([lat, lng], 12);
-          // // ใช้ OpenStreetMap tiles
-          // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          //   maxZoom: 19,
-          //   attribution: '© OpenStreetMap'
-          // }).addTo(map);
-
-          // L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          //   maxZoom: 19,
-          //   attribution: 'Tiles © Esri'
-          // }).addTo(map);
+          map = L.map('map').setView([lat, lng], 5);
 
           // สร้าง tile layer สำหรับ OpenStreetMap
           const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
