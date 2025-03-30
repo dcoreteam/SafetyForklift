@@ -96,7 +96,7 @@ function buildShiftQuery(filters) {
  2.2. Route แสดงหน้า /shifts (GET)
 			พร้อมกรองข้อมูลตาม query string
 -------------------------------------------- */
-app.get('/', async (req, res) => {
+router.get('/', async (req, res) => {
 	if (!req.session.user) {
 		return res.redirect('/login');
 	}
@@ -137,7 +137,7 @@ app.get('/', async (req, res) => {
  2.3. Route Export CSV (GET)
 			Export ตามเงื่อนไขเดียวกัน (Filter)
 -------------------------------------------- */
-app.get('/export/csv', async (req, res) => {
+router.get('/export/csv', async (req, res) => {
 	const client = await pool.connect();
 	try {
 		// รับค่า filters เหมือน /shifts
@@ -183,7 +183,7 @@ app.get('/export/csv', async (req, res) => {
  2.4. Route Export Excel (GET)
 			Export ตามเงื่อนไขเดียวกัน (Filter)
 -------------------------------------------- */
-app.get('/export/excel', async (req, res) => {
+router.get('/export/excel', async (req, res) => {
 	const client = await pool.connect();
 	try {
 		// รับค่า filters
