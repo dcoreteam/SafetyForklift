@@ -59,11 +59,12 @@ router.post('/login', async (req, res) => {
       return res.render('login', { error: 'Invalid username or password' });
     }
 
-    // ถ้าการตรวจสอบผ่าน => สร้าง session
+    // สร้าง session พร้อมเก็บ role ด้วย
     req.session.user = {
       id: user.id,
       username: user.username,
       company_id: user.company_id,
+      role: user.role,             // เก็บ user role ใน session
       customer_code: user.customer_code
     };
 
