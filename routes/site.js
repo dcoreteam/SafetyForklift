@@ -90,6 +90,27 @@ router.post('/add', async (req, res) => {
       contact_phone,
       contact_email
     ]);
+    const newSiteId = result.rows[0].id;
+
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการเพิ่ม site
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'add_site',
+      `User added site with ID ${newSiteId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/site');
   } catch (error) {
@@ -136,6 +157,26 @@ router.post('/edit/:id', async (req, res) => {
       siteId
     ]);
 
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการแก้ไข site
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'edit_site',
+      `User edited site with ID ${siteId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/site');
   } catch (error) {
     console.error('Error editing site:', error);
@@ -159,6 +200,26 @@ router.post('/delete/:id', async (req, res) => {
         AND deleted_at IS NULL
     `;
     await client.query(deleteQuery, [siteId]);
+
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการลบ site
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'delete_site',
+      `User deleted site with ID ${siteId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/site');
   } catch (error) {

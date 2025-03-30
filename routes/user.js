@@ -69,7 +69,7 @@ router.post('/add', async (req, res) => {
   const { username, password, role, company_id, view_map, create_staff } = req.body;
   const client = await pool.connect();
   try {
-    // 2) ตรวจสอบว่า customerCode นี้มีในตาราง company หรือไม่
+    // ตรวจสอบว่า company_id มีอยู่ในตาราง company หรือไม่ เพื่อดึง customer_code
     const companyQuery = `
       SELECT customer_code
       FROM company
@@ -85,6 +85,8 @@ router.post('/add', async (req, res) => {
     }
     const customer_code = companyResult.rows[0].customer_code;
     const hashedPassword = crypto.scryptSync(password, customer_code, 64).toString('hex');
+
+    // เปลี่ยน INSERT ให้ RETURNING id เพื่อให้ได้ userId ใหม่
     const insertQuery = `
       INSERT INTO users (
         username, 
@@ -97,24 +99,42 @@ router.post('/add', async (req, res) => {
         updated_at
       )
       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      RETURNING id
     `;
-    await client.query(insertQuery, [
+    const result = await client.query(insertQuery, [
       username,
       hashedPassword,
       role,
       company_id,
-      view_map === 'on',       // ถ้า checkbox ถูกติ๊ก, ค่าจะเป็น 'on' => true
+      view_map === 'on',
       create_staff === 'on'
+    ]);
+    const newUserId = result.rows[0].id;
+
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการเพิ่ม user
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'add_user',
+      `User added a new user with ID ${newUserId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
     ]);
 
     res.redirect('/management/user');
   } catch (error) {
-    // ถ้าฐานข้อมูลโยน error เพราะ username ซ้ำ (unique constraint)
     if (error.code === '23505') {
-      // แจ้งเตือน user ซ้ำ
       return res.status(400).send('Username already exists');
-      // หรือส่ง JSON ตามต้องการ
-      // return res.status(400).json({ Status: 'Error', message: 'Username already exists' });
     }
     console.error('Error adding user:', error);
     res.status(500).send('Internal server error');
@@ -145,12 +165,32 @@ router.post('/edit/:id', async (req, res) => {
     `;
     await client.query(updateQuery, [
       username,
-      password,
+      password,  // ในระบบจริงควรทำการ Hash ก่อนอัปเดต
       role,
       company_id,
       view_map === 'on',
       create_staff === 'on',
       userId
+    ]);
+
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการแก้ไข user
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'edit_user',
+      `User edited user with ID ${userId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
     ]);
 
     res.redirect('/management/user');
@@ -173,6 +213,27 @@ router.post('/delete/:id', async (req, res) => {
         AND deleted_at IS NULL
     `;
     await client.query(deleteQuery, [userId]);
+
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการลบ user
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'delete_user',
+      `User deleted user with ID ${userId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/user');
   } catch (error) {
     console.error('Error deleting user:', error);

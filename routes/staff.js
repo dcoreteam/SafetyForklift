@@ -159,6 +159,26 @@ router.post('/add', upload.single('image'), async (req, res) => {
       fs.unlinkSync(req.file.path);
     }
 
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการเพิ่ม Staff
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'add_staff',
+      `User added staff with ID ${newStaffId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/staff');
   } catch (error) {
     console.error('Error adding staff:', error);
@@ -267,6 +287,26 @@ router.post('/edit/:id', upload.single('image'), async (req, res) => {
       fs.unlinkSync(req.file.path);
     }
 
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการแก้ไข Staff
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'edit_staff',
+      `User edited staff with ID ${staffId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/staff');
   } catch (error) {
     console.error('Error editing staff:', error);
@@ -290,6 +330,26 @@ router.post('/delete/:id', async (req, res) => {
         AND deleted_at IS NULL
     `;
     await client.query(deleteQuery, [staffId]);
+
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการลบ Staff
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'delete_staff',
+      `User deleted staff with ID ${staffId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/staff');
   } catch (error) {
