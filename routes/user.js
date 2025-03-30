@@ -37,6 +37,7 @@ router.get('/', async (req, res) => {
     let params = [];
 
     // ถ้า role ไม่ใช่ super_admin ให้แสดงเฉพาะข้อมูลของตัวเอง
+    console.log(req.session.user.role);
     if (req.session.user.role !== 'super_admin') {
       query += ' AND u.id = $1';
       params.push(req.session.user.id);
