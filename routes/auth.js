@@ -37,7 +37,7 @@ router.post('/login', async (req, res) => {
   try {
     // ค้นหาผู้ใช้ที่ username ตรงกัน พร้อมดึง customer_code จาก company
     const query = `
-        SELECT u.id, u.username, u.password, u.company_id, c.customer_code
+        SELECT u.id, u.username, u.password, u.company_id, c.customer_code, u.role
         FROM users u
         JOIN company c ON u.company_id = c.id
         WHERE u.username = $1 AND u.deleted_at IS NULL
