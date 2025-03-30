@@ -58,12 +58,12 @@ router.get('/', async (req, res) => {
     query += ' ORDER BY u.id ASC';
     queryCompany += ' ORDER BY u.id ASC';
 
-    const result = await client.query(queryCompany, params);
+    const result = await client.query(query, params);
     const users = result.rows;
 
     // ดึงรายการ company ทั้งหมด (สำหรับ dropdown เลือก company)
     
-    const companyResult = await client.query(query, params);
+    const companyResult = await client.query(queryCompany, params);
     const companies = companyResult.rows;
 
     // render หน้า user_list.ejs
