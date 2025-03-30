@@ -28,6 +28,8 @@ router.get('/', async (req, res) => {
         s.contact_person,
         s.contact_phone,
         s.contact_email,
+        s.latitude,
+        s.longitude,
         c.id AS company_id,
         c.name AS company_name
       FROM site s
