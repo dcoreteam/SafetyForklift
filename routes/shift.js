@@ -103,26 +103,46 @@ router.get('/', async (req, res) => {
 	const client = await pool.connect();
 	try {
 		// ดึงค่า filters จาก query string
-		const { company_id, card_uid, staff_name, start_date, end_date } = req.query;
-		const filters = { company_id, card_uid, staff_name, start_date, end_date };
+		const { company_id, card_uid, staff_name, fleet_name, start_date, end_date } = req.query;
+    let filters = { company_id, card_uid, staff_name, fleet_name, start_date, end_date };
+
+    // หากผู้ใช้ไม่ใช่ super_admin ให้กำหนด company_id จาก session
+    if (req.session.user.role !== 'super_admin') {
+      filters.company_id = req.session.user.company_id;
+    }
 
 		// สร้าง query
 		const { queryString, params } = buildShiftQuery(filters);
 
-		// รัน query
-		const result = await client.query(queryString, params);
+		// รัน query สำหรับ shift report
+    const result = await client.query(queryString, params);
+    const shifts = result.rows;
 
-		// ดึงรายชื่อ company มาแสดงใน dropdown filter
-		const companyResult = await client.query(`
-              SELECT id, name
-              FROM company
-              WHERE deleted_at IS NULL
-              ORDER BY name ASC
-          `);
+		// ดึงรายชื่อ company สำหรับ dropdown
+    let companyQuery;
+    let companyParams = [];
+    if (req.session.user.role !== 'super_admin') {
+      companyQuery = `
+        SELECT id, name
+        FROM company
+        WHERE id = $1 AND deleted_at IS NULL
+        ORDER BY name ASC
+      `;
+      companyParams.push(req.session.user.company_id);
+    } else {
+      companyQuery = `
+        SELECT id, name
+        FROM company
+        WHERE deleted_at IS NULL
+        ORDER BY name ASC
+      `;
+    }
+    const companyResult = await client.query(companyQuery, companyParams);
+    const companies = companyResult.rows;
 
 		res.render('shifts', {
-			shifts: result.rows,
-			companies: companyResult.rows,
+			shifts,
+			companies,
 			filters
 		});
 	} catch (err) {
