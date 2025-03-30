@@ -66,7 +66,9 @@ router.post('/add', async (req, res) => {
     company_id,
     contact_person,
     contact_phone,
-    contact_email
+    contact_email,
+    latitude,
+    longitude
   } = req.body;
 
   const client = await pool.connect();
@@ -78,10 +80,12 @@ router.post('/add', async (req, res) => {
         contact_person,
         contact_phone,
         contact_email,
+        latitude,
+        longitude,
         created_at,
         updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
       RETURNING id
     `;
     const result = await client.query(insertQuery, [
@@ -89,7 +93,9 @@ router.post('/add', async (req, res) => {
       company_id,
       contact_person,
       contact_phone,
-      contact_email
+      contact_email,
+      latitude,
+      longitude
     ]);
     const newSiteId = result.rows[0].id;
 
