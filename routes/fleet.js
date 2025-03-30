@@ -133,6 +133,27 @@ router.post('/add', async (req, res) => {
       device_id,
       is_registered === 'on'
     ]);
+    const newFleetId = result.rows[0].id;
+
+    // เพิ่มข้อมูลลงใน usage_log สำหรับการเพิ่ม fleet
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'add_fleet',
+      `User added a new fleet with ID ${newFleetId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/fleet');
   } catch (error) {
@@ -197,6 +218,26 @@ router.post('/edit/:id', async (req, res) => {
       fleetId
     ]);
 
+    // เพิ่มข้อมูลลงใน usage_log สำหรับการแก้ไข fleet
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'edit_fleet',
+      `User edited fleet with ID ${fleetId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/fleet');
   } catch (error) {
     console.error('Error editing fleet:', error);
@@ -220,6 +261,26 @@ router.post('/delete/:id', async (req, res) => {
         AND deleted_at IS NULL
     `;
     await client.query(deleteQuery, [fleetId]);
+
+    // เพิ่มข้อมูลลงใน usage_log สำหรับการลบ fleet
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'delete_fleet',
+      `User deleted fleet with ID ${fleetId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/fleet');
   } catch (error) {
