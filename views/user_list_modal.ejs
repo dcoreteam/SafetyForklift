@@ -115,8 +115,9 @@
               <div class="mb-3">
                 <label for="role" class="form-label">Role:</label>
                 <select class="form-select" id="role" name="role">
-                  <option value="super_admin">super_admin</option>
-                  <option value="customer_admin">customer_admin</option>
+                  <% roleOptions.forEach(function(roleOption) { %>
+                    <option value="<%= roleOption %>"><%= roleOption %></option>
+                  <% }); %>
                 </select>
               </div>
 

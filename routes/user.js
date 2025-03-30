@@ -34,18 +34,22 @@ router.get('/', async (req, res) => {
        JOIN company c ON u.company_id = c.id
        WHERE u.deleted_at IS NULL
     `;
+
     let params = [];
 
+    // กำหนด role options ที่ต้องการส่งให้ template
+    let roleOptions = [];
+
     // ถ้า role ไม่ใช่ super_admin ให้แสดงเฉพาะข้อมูลของตัวเอง
-    console.log(req.session.user.role);
     if (req.session.user.role !== 'super_admin') {
       query += ' AND u.id = $1';
       params.push(req.session.user.id);
+    } else {
+      roleOptions.push('super_admin');
     }
+    roleOptions.push('customer_admin');
 
     query += ' ORDER BY u.id ASC';
-
-    console.log(query);
 
     const result = await client.query(query, params);
     const users = result.rows;
@@ -60,7 +64,7 @@ router.get('/', async (req, res) => {
     const companies = companyResult.rows;
 
     // render หน้า user_list.ejs
-    res.render('user_list_modal', { users, companies });
+    res.render('user_list_modal', { users, companies, roleOptions });
   } catch (err) {
     console.error('Error fetching users:', err);
     res.status(500).send('Internal server error');
