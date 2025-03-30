@@ -17,7 +17,7 @@ const pool = new Pool({
   - ดึงข้อมูลจาก usage_log และจัดรูปแบบ created_at เป็น 'YYYY-MM-DD HH24:MI:SS'
   - ส่งข้อมูลไป render หน้า usage_report.ejs
 */
-router.get('/usage', async (req, res) => {
+router.get('/', async (req, res) => {
 	if (!req.session.user) {
 		return res.redirect('/login');
 	}
