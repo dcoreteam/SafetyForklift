@@ -44,6 +44,8 @@ router.get('/', async (req, res) => {
 
     query += ' ORDER BY u.id ASC';
 
+    console.log(query);
+
     const result = await client.query(query, params);
     const users = result.rows;
 
