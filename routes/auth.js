@@ -68,6 +68,28 @@ router.post('/login', async (req, res) => {
       customer_code: user.customer_code
     };
 
+    // บันทึกข้อมูลการใช้งานใน usage_log (event: login)
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'] || '';
+    const logQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(logQuery, [
+      user.id,
+      'login',
+      'User logged in',
+      ipAddress,
+      userAgent
+    ]);
+
     res.redirect('/');
   } catch (error) {
     console.error('Error during login:', error);
@@ -82,6 +104,30 @@ router.post('/login', async (req, res) => {
   ทำการ logout โดยทำลาย session แล้ว redirect ไปหน้า login
 */
 router.get('/logout', (req, res) => {
+  const userId = req.session.user.id;
+  const ipAddress = req.ip;
+  const userAgent = req.headers['user-agent'] || '';
+
+  // บันทึกการใช้งาน (event: logout)
+  const logQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+  await client.query(logQuery, [
+    userId,
+    'logout',
+    'User logged out',
+    ipAddress,
+    userAgent
+  ]);
+
   req.session.destroy((err) => {
     if (err) {
       console.error('Error destroying session:', err);
