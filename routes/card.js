@@ -46,6 +46,26 @@ router.get('/', async (req, res) => {
     `);
     const staffs = staffResult.rows;
 
+    // เพิ่มข้อมูลการใช้งาน (Usage Log)
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user.id,
+      'view_card',
+      'User viewed card list',
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     // render หน้า card_list_modal.ejs
     res.render('card_list_modal', { cards, staffs });
   } catch (error) {
@@ -85,6 +105,26 @@ router.post('/add', async (req, res) => {
       issue_date,
       status,
       uid
+    ]);
+
+    // บันทึกข้อมูลการใช้งานลงใน usage_log หลังจากเพิ่ม card เสร็จ
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,  // user_id จาก session
+      'add_card',                                      // event_type
+      'User added a new card',                         // event_description
+      req.ip,                                          // IP Address
+      req.headers['user-agent'] || ''                  // User Agent
     ]);
 
     res.redirect('/management/card');
@@ -129,6 +169,26 @@ router.post('/edit/:id', async (req, res) => {
       cardId
     ]);
 
+    // บันทึกการใช้งาน (Usage Log) สำหรับแก้ไข card
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'edit_card',
+      `User edited card with ID ${cardId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/card');
   } catch (error) {
     console.error('Error editing card:', error);
@@ -152,6 +212,26 @@ router.post('/delete/:id', async (req, res) => {
         AND deleted_at IS NULL
     `;
     await client.query(deleteQuery, [cardId]);
+
+    // บันทึกการใช้งาน (Usage Log) สำหรับลบ card
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'delete_card',
+      `User deleted card with ID ${cardId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/card');
   } catch (error) {
