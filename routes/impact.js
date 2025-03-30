@@ -103,6 +103,26 @@ router.get('/', async (req, res) => {
     // สมมติ severity มี Low/Medium/High
     const severityOptions = ['Low', 'Medium', 'High'];
 
+    // บันทึกข้อมูลการใช้งาน (Usage Log) เมื่อเข้าชมหน้า Impact Report
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user.id,
+      'view_impact',
+      'User viewed impact report',
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.render('impact_report', {
       impacts,
       forklifts: forkliftResult.rows,

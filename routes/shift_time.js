@@ -3,13 +3,13 @@ const router = express.Router();
 const { Pool } = require('pg');
 
 const pool = new Pool({
-    user: 'palm',
-    host: '203.154.32.219',
-    database: 'fm',
-    password: 'qwer1234',
-    port: 5432,
-    idleTimeoutMillis: 30000
-  });
+  user: 'palm',
+  host: '203.154.32.219',
+  database: 'fm',
+  password: 'qwer1234',
+  port: 5432,
+  idleTimeoutMillis: 30000
+});
 
 /* -----------------------------------------
    1) แสดงรายการ Shift Time (GET /management/shift_time)
@@ -103,6 +103,26 @@ router.post('/add', async (req, res) => {
       }
     }
 
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการเพิ่ม shift_time
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'add_shift_time',
+      `User added shift time with ID ${newShiftTimeId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/shift_time');
   } catch (error) {
     console.error('Error adding shift_time:', error);
@@ -155,6 +175,26 @@ router.post('/edit/:id', async (req, res) => {
       }
     }
 
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการแก้ไข shift_time
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'edit_shift_time',
+      `User edited shift time with ID ${shiftTimeId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/shift_time');
   } catch (error) {
     console.error('Error editing shift_time:', error);
@@ -182,6 +222,26 @@ router.post('/delete/:id', async (req, res) => {
 
     // หากต้องการลบ shift_time_site ด้วย (optional):
     // await client.query(`DELETE FROM shift_time_site WHERE shift_time_id = $1`, [shiftTimeId]);
+
+    // บันทึกข้อมูลการใช้งาน (Usage Log) สำหรับการลบ shift_time
+    const usageLogQuery = `
+    INSERT INTO usage_log (
+      user_id,
+      event_type,
+      event_description,
+      ip_address,
+      user_agent,
+      created_at
+    )
+    VALUES ($1, $2, $3, $4, $5, NOW())
+  `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'delete_shift_time',
+      `User deleted shift time with ID ${shiftTimeId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/shift_time');
   } catch (error) {
