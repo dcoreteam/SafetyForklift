@@ -826,8 +826,29 @@ app.get('/admin', (req, res) => {
   res.render('admin_home');
 });
 
-app.get('/admin/import', (req, res) => {
-  res.render('admin_import');
+app.get('/admin/import', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  const client = await pool.connect();
+  try {
+    // ดึงข้อมูลบริษัทที่ยังไม่ถูกลบ (deleted_at IS NULL)
+    const companyQuery = `
+      SELECT id, name, customer_code
+      FROM company
+      WHERE deleted_at IS NULL
+      ORDER BY name ASC
+    `;
+    const result = await client.query(companyQuery);
+    const companies = result.rows;
+    // ส่งตัวแปร companies ไปยัง view admin_import.ejs
+    res.render('admin_import', { companies });
+  } catch (error) {
+    console.error("Error fetching companies:", error);
+    res.status(500).send("Internal server error");
+  } finally {
+    client.release();
+  }
 });
 
 app.post('/admin/import', upload.single('importFile'), async (req, res) => {

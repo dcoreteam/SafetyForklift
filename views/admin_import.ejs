@@ -1,21 +1,31 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
-
-<head>
-  <meta charset="UTF-8" />
-  <title>Import Data</title>
-  <!-- Bootstrap CSS -->
-  <!--link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"-->
-  <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
-</head>
-
-<body>
-  <!-- Include Partial Navbar -->
-  <%- include('partials/navbar') %>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Import Data</title>
+    <!-- Bootswatch Slate Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Include Partial Navbar -->
+    <%- include('partials/navbar') %>
 
     <div class="container-fluid mt-4">
       <h1>Import Data</h1>
       <form method="POST" action="/admin/import" enctype="multipart/form-data" class="row g-3">
+        <!-- Dropdown สำหรับเลือกบริษัท -->
+        <div class="col-md-6">
+          <label for="company_id" class="form-label">Select Company:</label>
+          <select name="company_id" id="company_id" class="form-select" required>
+            <option value="">-- Select Company --</option>
+            <% companies.forEach(company => { %>
+              <option value="<%= company.id %>">
+                [<%= company.customer_code %>] <%= company.name %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+        <!-- เลือกไฟล์ CSV/Excel -->
         <div class="col-md-6">
           <label for="importFile" class="form-label">Choose file (CSV/Excel):</label>
           <input type="file" name="importFile" id="importFile" class="form-control" accept=".csv,.xlsx" required>
@@ -27,8 +37,7 @@
       </form>
     </div>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
+  </body>
 </html>
