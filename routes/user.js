@@ -34,6 +34,11 @@ router.get('/', async (req, res) => {
        JOIN company c ON u.company_id = c.id
        WHERE u.deleted_at IS NULL
     `;
+    let queryCompany = `
+      SELECT id, name, customer_code
+      FROM company
+      WHERE deleted_at IS NULL
+    `;
 
     let params = [];
 
@@ -42,25 +47,23 @@ router.get('/', async (req, res) => {
 
     // ถ้า role ไม่ใช่ super_admin ให้แสดงเฉพาะข้อมูลของตัวเอง
     if (req.session.user.role !== 'super_admin') {
-      query += ' AND u.id = $1';
-      params.push(req.session.user.id);
+      query += ' AND u.company_id = $1';
+      queryCompany += ' AND id = $1'
+      params.push(req.session.user.company_id);
     } else {
       roleOptions.push('super_admin');
     }
     roleOptions.push('customer_admin');
 
     query += ' ORDER BY u.id ASC';
+    queryCompany += ' ORDER BY u.id ASC';
 
     const result = await client.query(query, params);
     const users = result.rows;
 
     // ดึงรายการ company ทั้งหมด (สำหรับ dropdown เลือก company)
-    const companyResult = await client.query(`
-      SELECT id, name, customer_code
-      FROM company
-      WHERE deleted_at IS NULL
-      ORDER BY name ASC
-    `);
+    
+    const companyResult = await client.query(query, params);
     const companies = companyResult.rows;
 
     // render หน้า user_list.ejs
