@@ -46,26 +46,6 @@ router.get('/', async (req, res) => {
     `);
     const staffs = staffResult.rows;
 
-    // เพิ่มข้อมูลการใช้งาน (Usage Log)
-    const usageLogQuery = `
-      INSERT INTO usage_log (
-        user_id,
-        event_type,
-        event_description,
-        ip_address,
-        user_agent,
-        created_at
-      )
-      VALUES ($1, $2, $3, $4, $5, NOW())
-    `;
-    await client.query(usageLogQuery, [
-      req.session.user.id,
-      'view_card',
-      'User viewed card list',
-      req.ip,
-      req.headers['user-agent'] || ''
-    ]);
-
     // render หน้า card_list_modal.ejs
     res.render('card_list_modal', { cards, staffs });
   } catch (error) {

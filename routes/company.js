@@ -97,6 +97,28 @@ router.post('/add', async (req, res) => {
       contact_email,
       customer_code
     ]);
+    
+    const companyId = result.rows[0].id;
+
+    // บันทึกการใช้งาน (Usage Log) สำหรับการเพิ่ม company
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'add_company',
+      `User added company with ID ${companyId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/company');
   } catch (error) {
@@ -146,6 +168,26 @@ router.post('/edit/:id', async (req, res) => {
       companyId
     ]);
 
+    // บันทึกการใช้งาน (Usage Log) สำหรับการแก้ไข company
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'edit_company',
+      `User edited company with ID ${companyId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
+
     res.redirect('/management/company');
   } catch (error) {
     console.error('Error updating company:', error);
@@ -171,6 +213,26 @@ router.post('/delete/:id', async (req, res) => {
         AND deleted_at IS NULL
     `;
     await client.query(deleteQuery, [companyId]);
+
+    // บันทึกการใช้งาน (Usage Log) สำหรับการลบ company
+    const usageLogQuery = `
+      INSERT INTO usage_log (
+        user_id,
+        event_type,
+        event_description,
+        ip_address,
+        user_agent,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `;
+    await client.query(usageLogQuery, [
+      req.session.user ? req.session.user.id : null,
+      'delete_company',
+      `User deleted company with ID ${companyId}`,
+      req.ip,
+      req.headers['user-agent'] || ''
+    ]);
 
     res.redirect('/management/company');
   } catch (error) {
