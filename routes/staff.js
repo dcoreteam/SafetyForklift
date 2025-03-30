@@ -37,8 +37,8 @@ router.get('/', async (req, res) => {
   }
   const client = await pool.connect();
   try {
-    // JOIN ตาราง staff กับ company, site, shift_time
-    const query = `
+    // สร้าง query สำหรับดึงข้อมูล staff โดยมีเงื่อนไขตาม role
+    let query = `
       SELECT
         s.id AS staff_id,
         s.name AS staff_name,
@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
         s.email,
         s.department,
         s.address,
-        s.company_code,             -- เพิ่มฟิลด์ company_code
+        s.company_code,
         c.name AS company_name,
         c.id AS company_id,
         si.name AS site_name,
@@ -59,18 +59,19 @@ router.get('/', async (req, res) => {
       LEFT JOIN site si ON s.site_id = si.id
       LEFT JOIN shift_time st ON s.shift_time_id = st.id
       WHERE s.deleted_at IS NULL
-      ORDER BY s.id ASC
     `;
-    const result = await client.query(query);
+    let params = [];
+    // ถ้า role ไม่ใช่ super_admin ให้กรองเฉพาะบริษัทของผู้ใช้
+    if (req.session.user.role !== 'super_admin') {
+      query += " AND s.company_id = $1";
+      params.push(req.session.user.company_id);
+    }
+    query += " ORDER BY s.id ASC";
+    const result = await client.query(query, params);
     const staffs = result.rows;
 
     // ดึงข้อมูลสำหรับ dropdown ของ company, site, shift_time
-    const companyResult = await client.query(`
-      SELECT id, name
-      FROM company
-      WHERE deleted_at IS NULL
-      ORDER BY name
-    `);
+    
     const siteResult = await client.query(`
       SELECT id, name
       FROM site
@@ -84,9 +85,29 @@ router.get('/', async (req, res) => {
       ORDER BY id
     `);
 
-    const companies = companyResult.rows;
     const sites = siteResult.rows;
     const shiftTimes = shiftTimeResult.rows;
+    // ดึงข้อมูลสำหรับ dropdown ของ company:
+    // ถ้า role ไม่ใช่ super_admin ให้ดึงเฉพาะบริษัทของผู้ใช้
+    let companyQuery, companyResult;
+    if (req.session.user.role !== 'super_admin') {
+      companyQuery = `
+        SELECT id, name, customer_code
+        FROM company
+        WHERE id = $1 AND deleted_at IS NULL
+        ORDER BY name
+      `;
+      companyResult = await client.query(companyQuery, [req.session.user.company_id]);
+    } else {
+      companyQuery = `
+        SELECT id, name, customer_code
+        FROM company
+        WHERE deleted_at IS NULL
+        ORDER BY name
+      `;
+      companyResult = await client.query(companyQuery);
+    }
+    const companies = companyResult.rows;
 
     res.render('staff_list_modal', { staffs, companies, sites, shiftTimes });
   } catch (error) {
