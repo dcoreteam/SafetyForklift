@@ -62,6 +62,9 @@ app.use('/management/card', cardRoutes);
 const impactRoutes = require('./routes/impact');
 app.use('/reports/impact', impactRoutes);
 
+const usageRoutes = require('./routes/usage');
+app.use('/reports/usage', usageRoutes);
+
 app.get('/', (req, res) => {
   if (!req.session.user) {
     return res.redirect('/login');
