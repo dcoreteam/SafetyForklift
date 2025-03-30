@@ -70,26 +70,19 @@ router.get('/', async (req, res) => {
     const result = await client.query(query, params);
     const staffs = result.rows;
 
-    // ดึงข้อมูลสำหรับ dropdown ของ company, site, shift_time
-    
-    const siteResult = await client.query(`
-      SELECT id, name
-      FROM site
-      WHERE deleted_at IS NULL
-      ORDER BY name
-    `);
     const shiftTimeResult = await client.query(`
       SELECT id, name
       FROM shift_time
       WHERE deleted_at IS NULL
       ORDER BY id
     `);
-
-    const sites = siteResult.rows;
-    const shiftTimes = shiftTimeResult.rows;
+    
     // ดึงข้อมูลสำหรับ dropdown ของ company:
     // ถ้า role ไม่ใช่ super_admin ให้ดึงเฉพาะบริษัทของผู้ใช้
     let companyQuery, companyResult;
+    let siteQuery, siteResult;
+    let shiftTimeQuery, shiftTimeResult;
+
     if (req.session.user.role !== 'super_admin') {
       companyQuery = `
         SELECT id, name, customer_code
@@ -106,8 +99,20 @@ router.get('/', async (req, res) => {
         ORDER BY name
       `;
       companyResult = await client.query(companyQuery);
+      siteQuery = `
+        SELECT id, name
+        FROM site
+        WHERE deleted_at IS NULL
+        ORDER BY name
+      `;
+      siteResult = await client.query(siteQuery);
+      shiftTimeQuery = `
+      `;
+      shiftTimeResultResult = await client.query(shiftTimeQuery);
     }
     const companies = companyResult.rows;
+    const sites = siteResult.rows;
+    const shiftTimes = shiftTimeResult.rows;
 
     res.render('staff_list_modal', { staffs, companies, sites, shiftTimes });
   } catch (error) {
