@@ -280,6 +280,9 @@
         document.getElementById('vehicle_status').value = '';
         document.getElementById('device_id').value = '';
         document.getElementById('is_registered').checked = false;
+
+        // ในโหมด Add ให้สามารถแก้ไขได้
+        document.getElementById('device_id').readOnly = false;
       }
 
       // ฟังก์ชันเปิด Modal ในโหมด Edit Fleet
@@ -324,6 +327,9 @@
         document.getElementById('vehicle_status').value = vehicle_status;
         document.getElementById('device_id').value = device_id;
         document.getElementById('is_registered').checked = (is_registered === true);
+
+        // ตั้งค่าให้ device_id เป็นแบบอ่านอย่างเดียว (read-only)
+        document.getElementById('device_id').readOnly = true;
       }
     </script>
   </body>
