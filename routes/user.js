@@ -25,7 +25,6 @@ router.get('/', async (req, res) => {
       SELECT
          u.id AS user_id,
          u.username,
-         u.password,
          u.role,
          u.view_map,
          u.create_staff,
