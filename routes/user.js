@@ -20,22 +20,29 @@ router.get('/', async (req, res) => {
   }
   const client = await pool.connect();
   try {
-    const query = `
-      SELECT
-        u.id AS user_id,
+    // สร้าง query พื้นฐานสำหรับดึงข้อมูลผู้ใช้
+    let query = `
+      SELECT 
+        u.id,
         u.username,
-        u.password,
         u.role,
-        u.view_map,
-        u.create_staff,
         u.company_id,
-        c.name AS company_name
+        u.created_at,
+        u.updated_at
       FROM users u
-      JOIN company c ON u.company_id = c.id
       WHERE u.deleted_at IS NULL
-      ORDER BY u.id ASC
     `;
-    const result = await client.query(query);
+    let params = [];
+
+    // ถ้า role ไม่ใช่ super_admin ให้แสดงเฉพาะข้อมูลของตัวเอง
+    if (req.session.user.role !== 'super_admin') {
+      query += ' AND u.id = $1';
+      params.push(req.session.user.id);
+    }
+
+    query += ' ORDER BY u.id ASC';
+
+    const result = await client.query(query, params);
     const users = result.rows;
 
     // ดึงรายการ company ทั้งหมด (สำหรับ dropdown เลือก company)
