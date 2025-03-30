@@ -104,12 +104,19 @@ router.post('/login', async (req, res) => {
   ทำการ logout โดยทำลาย session แล้ว redirect ไปหน้า login
 */
 router.get('/logout', async (req, res) => {
-  const userId = req.session.user.id;
-  const ipAddress = req.ip;
-  const userAgent = req.headers['user-agent'] || '';
-
-  // บันทึกการใช้งาน (event: logout)
-  const logQuery = `
+  // หาก session ไม่มีผู้ใช้ ให้ redirect ทันที
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  
+  const client = await pool.connect();
+  try {
+    const userId = req.session.user.id;
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'] || '';
+    
+    // บันทึกการใช้งาน (event: logout)
+    const logQuery = `
       INSERT INTO usage_log (
         user_id,
         event_type,
@@ -120,20 +127,26 @@ router.get('/logout', async (req, res) => {
       )
       VALUES ($1, $2, $3, $4, $5, NOW())
     `;
-  await client.query(logQuery, [
-    userId,
-    'logout',
-    'User logged out',
-    ipAddress,
-    userAgent
-  ]);
-
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Error destroying session:', err);
-    }
-    res.redirect('/login');
-  });
+    await client.query(logQuery, [
+      userId,
+      'logout',
+      'User logged out',
+      ipAddress,
+      userAgent
+    ]);
+    
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session:', err);
+      }
+      res.redirect('/login');
+    });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    res.status(500).send('Internal server error');
+  } finally {
+    client.release();
+  }
 });
 
 module.exports = router;
