@@ -174,10 +174,15 @@
         // สร้าง map ถ้ายังไม่มี
         if (!map) {
           map = L.map('map').setView([lat, lng], 12);
-          // ใช้ OpenStreetMap tiles
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          // // ใช้ OpenStreetMap tiles
+          // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          //   maxZoom: 19,
+          //   attribution: '© OpenStreetMap'
+          // }).addTo(map);
+
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap'
+            attribution: 'Tiles © Esri'
           }).addTo(map);
 
           // สร้าง marker เริ่มต้น
