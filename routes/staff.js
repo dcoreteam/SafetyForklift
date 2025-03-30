@@ -139,8 +139,9 @@ router.post('/add', upload.single('image'), async (req, res) => {
         updated_at
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      RETURNING id
     `;
-    await client.query(insertQuery, [
+    const result = await client.query(insertQuery, [
       name,
       job_title,
       company_id,
@@ -153,6 +154,8 @@ router.post('/add', upload.single('image'), async (req, res) => {
       imageBuffer,
       company_code   // ส่งค่าที่ได้รับจากฟอร์ม
     ]);
+
+    let newStaffId = result.rows[0].id;
 
     // ลบไฟล์ tmp ถ้ามี
     if (req.file) {

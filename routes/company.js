@@ -89,7 +89,7 @@ router.post('/add', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
       RETURNING id
     `;
-    await client.query(insertQuery, [
+    const result = await client.query(insertQuery, [
       name,
       address,
       contact_person,
