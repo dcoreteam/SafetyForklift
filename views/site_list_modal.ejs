@@ -71,7 +71,9 @@
                       <%= si.company_id %>,
                       '<%= si.contact_person ? si.contact_person.replace(/'/g, '\\\'') : '' %>',
                       '<%= si.contact_phone ? si.contact_phone.replace(/'/g, '\\\'') : '' %>',
-                      '<%= si.contact_email ? si.contact_email.replace(/'/g, '\\\'') : '' %>'
+                      '<%= si.contact_email ? si.contact_email.replace(/'/g, '\\\'') : '' %>',
+                      '<%= si.latitude ? si.latitude.replace(/'/g, '\\\'') : '' %>',
+                      '<%= si.longitude ? si.longitude.replace(/'/g, '\\\'') : '' %>'
                     )">
                       Edit
                     </button>
