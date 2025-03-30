@@ -103,7 +103,7 @@ router.post('/login', async (req, res) => {
   GET /logout
   ทำการ logout โดยทำลาย session แล้ว redirect ไปหน้า login
 */
-router.get('/logout', (req, res) => {
+router.get('/logout', async (req, res) => {
   const userId = req.session.user.id;
   const ipAddress = req.ip;
   const userAgent = req.headers['user-agent'] || '';
