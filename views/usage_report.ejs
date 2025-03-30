@@ -6,6 +6,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/slate/bootstrap.min.css" rel="stylesheet">
   </head>
   <body>
+    <!-- เรียกใช้ Partial Navbar -->
+    <%- include('partials/navbar') %>
+
     <div class="container mt-4">
       <h1>Usage Log Report</h1>
 
@@ -42,7 +45,7 @@
           <input type="date" name="end_date" class="form-control" value="<%= filters.end_date || '' %>">
         </div>
         <div class="col-md-3 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary">Filter</button>
+          <button type="submit" class="btn btn-success">Filter</button>
           <a href="/reports/usage" class="btn btn-secondary ms-2">Reset</a>
         </div>
       </form>
