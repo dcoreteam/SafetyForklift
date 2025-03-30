@@ -70,53 +70,74 @@ router.get('/', async (req, res) => {
     const result = await client.query(query, params);
     const staffs = result.rows;
     
-    // ดึงข้อมูลสำหรับ dropdown ของ company:
-    // ถ้า role ไม่ใช่ super_admin ให้ดึงเฉพาะบริษัทของผู้ใช้
-    let companyQuery, companyResult;
-    let siteQuery, siteResult;
-    let shiftTimeQuery, shiftTimeResult;
-
-    shiftTimeQuery = `
-      SELECT id, name
-      FROM shift_time
-      WHERE deleted_at IS NULL
-      ORDER BY id
-    `;
-    shiftTimeResult = await client.query(shiftTimeQuery);
-
+    // ดึงข้อมูลสำหรับ dropdown ของ company
+    let companyQuery;
+    let companyParams = [];
     if (req.session.user.role !== 'super_admin') {
       companyQuery = `
         SELECT id, name, customer_code
         FROM company
         WHERE id = $1 AND deleted_at IS NULL
-        ORDER BY name
+        ORDER BY name ASC
       `;
-      companyResult = await client.query(companyQuery, [req.session.user.company_id]);
-      siteQuery = `
-        SELECT id, name
-        FROM site
-        WHERE company_id = $1 AND deleted_at IS NULL
-        ORDER BY name
-      `;
-      siteResult = await client.query(siteQuery, [req.session.user.company_id]);
+      companyParams.push(req.session.user.company_id);
     } else {
       companyQuery = `
         SELECT id, name, customer_code
         FROM company
         WHERE deleted_at IS NULL
-        ORDER BY name
+        ORDER BY name ASC
       `;
-      companyResult = await client.query(companyQuery);
+    }
+    const companyResult = await client.query(companyQuery, companyParams);
+    const companies = companyResult.rows;
+
+    // ดึงข้อมูลสำหรับ dropdown ของ site
+    let siteQuery;
+    let siteParams = [];
+    if (req.session.user.role !== 'super_admin') {
+      siteQuery = `
+        SELECT id, name
+        FROM site
+        WHERE company_id = $1 AND deleted_at IS NULL
+        ORDER BY name ASC
+      `;
+      siteParams.push(req.session.user.company_id);
+    } else {
       siteQuery = `
         SELECT id, name
         FROM site
         WHERE deleted_at IS NULL
-        ORDER BY name
+        ORDER BY name ASC
       `;
-      siteResult = await client.query(siteQuery);
     }
-    const companies = companyResult.rows;
+    const siteResult = await client.query(siteQuery, siteParams);
     const sites = siteResult.rows;
+
+    // ดึงข้อมูลสำหรับ dropdown ของ shift_time:
+    // ถ้าผู้ใช้ไม่ใช่ super_admin ให้แสดงเฉพาะ shift_time ที่เชื่อมโยงกับไซต์ที่มี company_id เท่ากับของผู้ใช้
+    let shiftTimeQuery;
+    let shiftTimeParams = [];
+    if (req.session.user.role !== 'super_admin') {
+      shiftTimeQuery = `
+        SELECT DISTINCT st.id, st.name
+        FROM shift_time st
+        JOIN shift_time_site sts ON st.id = sts.shift_time_id
+        JOIN site s ON sts.site_id = s.id
+        WHERE s.company_id = $1
+          AND st.deleted_at IS NULL
+        ORDER BY st.id
+      `;
+      shiftTimeParams.push(req.session.user.company_id);
+    } else {
+      shiftTimeQuery = `
+        SELECT id, name
+        FROM shift_time
+        WHERE deleted_at IS NULL
+        ORDER BY id
+      `;
+    }
+    const shiftTimeResult = await client.query(shiftTimeQuery, shiftTimeParams);
     const shiftTimes = shiftTimeResult.rows;
 
     res.render('staff_list_modal', { staffs, companies, sites, shiftTimes });
