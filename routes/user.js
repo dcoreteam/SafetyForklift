@@ -22,15 +22,18 @@ router.get('/', async (req, res) => {
   try {
     // สร้าง query พื้นฐานสำหรับดึงข้อมูลผู้ใช้
     let query = `
-      SELECT 
-        u.id,
-        u.username,
-        u.role,
-        u.company_id,
-        u.created_at,
-        u.updated_at
-      FROM users u
-      WHERE u.deleted_at IS NULL
+      SELECT
+         u.id AS user_id,
+         u.username,
+         u.password,
+         u.role,
+         u.view_map,
+         u.create_staff,
+         u.company_id,
+         c.name AS company_name
+       FROM users u
+       JOIN company c ON u.company_id = c.id
+       WHERE u.deleted_at IS NULL
     `;
     let params = [];
 
