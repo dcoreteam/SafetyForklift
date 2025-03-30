@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
     roleOptions.push('customer_admin');
 
     query += ' ORDER BY u.id ASC';
-    queryCompany += ' ORDER BY u.id ASC';
+    queryCompany += ' ORDER BY id ASC';
 
     const result = await client.query(query, params);
     const users = result.rows;
