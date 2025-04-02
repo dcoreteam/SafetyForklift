@@ -22,6 +22,8 @@ const pool = new Pool({
   idleTimeoutMillis: 30000
 });
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 // ตั้งค่า EJS
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
