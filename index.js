@@ -922,7 +922,7 @@ app.post('/impact', async (req, res) => {
         "location",
         occurred_at
       )
-      VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW()))
+      VALUES ($1, (select assigned_staff_id from "card" where uid = $2 limit 1), $3, $4, $5)
       RETURNING id
     `;
     const result = await client.query(insertQuery, [
