@@ -28,8 +28,8 @@ router.get('/', async (req, res) => {
 
     // หากไม่มีการระบุวันที่ ให้กำหนดเป็นวันแรกและวันสุดท้ายของเดือนปัจจุบัน
     const currentDate = new Date();
-    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 2);
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
     if (!start_date) {
       start_date = firstDay.toISOString().split('T')[0];
     }
