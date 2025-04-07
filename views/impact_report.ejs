@@ -13,87 +13,56 @@
 
     <div class="container-fluid mt-4">
       <h1>Impact Report</h1>
-
-      <!-- ฟอร์มกรอง -->
-      <form method="GET" action="/reports/impact" class="row g-3 mb-3">
+      <!-- ฟอร์มกรองข้อมูล -->
+      <form method="GET" action="/reports/impact" class="row g-3 mb-4">
         <div class="col-md-3">
-          <label class="form-label">Forklift:</label>
-          <select name="forklift_id" class="form-select">
+          <label class="form-label">Fleet:</label>
+          <select name="fleet_id" class="form-select">
             <option value="">-- All --</option>
-            <% forklifts.forEach(f => { %>
-              <option
-                value="<%= f.id %>"
-                <%= (filters.forklift_id == f.id) ? 'selected' : '' %>
-              >
-                <%= f.vehicle_name %>
-              </option>
-            <% }) %>
+            <% fleets.forEach(fleet => { %>
+              <option value="<%= fleet.id %>" <%= (filters.fleet_id == fleet.id) ? 'selected' : '' %>><%= fleet.vehicle_name %></option>
+            <% }); %>
           </select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Staff:</label>
           <select name="staff_id" class="form-select">
             <option value="">-- All --</option>
-            <% staffs.forEach(st => { %>
-              <option
-                value="<%= st.id %>"
-                <%= (filters.staff_id == st.id) ? 'selected' : '' %>
-              >
-                <%= st.name %>
-              </option>
-            <% }) %>
+            <% staffs.forEach(staff => { %>
+              <option value="<%= staff.id %>" <%= (filters.staff_id == staff.id) ? 'selected' : '' %>><%= staff.name %></option>
+            <% }); %>
           </select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Severity:</label>
           <select name="severity" class="form-select">
             <option value="">-- All --</option>
-            <% severityOptions.forEach(sv => { %>
-              <option
-                value="<%= sv %>"
-                <%= (filters.severity == sv) ? 'selected' : '' %>
-              >
-                <%= sv %>
-              </option>
-            <% }) %>
+            <% severityOptions.forEach(sev => { %>
+              <option value="<%= sev %>" <%= (filters.severity == sev) ? 'selected' : '' %>><%= sev %></option>
+            <% }); %>
           </select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Start Date:</label>
-          <input
-            type="date"
-            name="start_date"
-            class="form-control"
-            value="<%= filters.start_date || '' %>"
-          />
+          <input type="date" name="start_date" class="form-control" value="<%= filters.start_date || '' %>">
         </div>
-
         <div class="col-md-3">
           <label class="form-label">End Date:</label>
-          <input
-            type="date"
-            name="end_date"
-            class="form-control"
-            value="<%= filters.end_date || '' %>"
-          />
+          <input type="date" name="end_date" class="form-control" value="<%= filters.end_date || '' %>">
         </div>
-
         <div class="col-md-3 d-flex align-items-end">
-          <button type="submit" class="btn btn-success me-2">Filter</button>
-          <a href="/reports/impact" class="btn btn-secondary">Reset</a>
+          <button type="submit" class="btn btn-primary">Filter</button>
+          <a href="/reports/impact" class="btn btn-secondary ms-2">Reset</a>
         </div>
       </form>
-
+      
       <!-- ตารางแสดงผล -->
       <table class="table table-bordered table-striped">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Forklift</th>
-            <th>Staff</th>
+            <th>Fleet Name</th>
+            <th>Staff Name</th>
             <th>Severity</th>
             <th>G-Force</th>
             <th>Location</th>
@@ -106,17 +75,17 @@
               <td colspan="7" class="text-center">No records found.</td>
             </tr>
           <% } else { %>
-            <% impacts.forEach(imp => { %>
+            <% impacts.forEach(impact => { %>
               <tr>
-                <td><%= imp.impact_id %></td>
-                <td><%= imp.forklift_name %></td>
-                <td><%= imp.staff_name %></td>
-                <td><%= imp.severity %></td>
-                <td><%= imp.g_force %></td>
-                <td><%= imp.location || '' %></td>
-                <td><%= imp.occurred_at %></td>
+                <td><%= impact.impact_id %></td>
+                <td><%= impact.fleet_name %></td>
+                <td><%= impact.staff_name %></td>
+                <td><%= impact.severity %></td>
+                <td><%= impact.g_force %></td>
+                <td><%= impact.location || '' %></td>
+                <td><%= impact.occurred_at %></td>
               </tr>
-            <% }) %>
+            <% }); %>
           <% } %>
         </tbody>
       </table>

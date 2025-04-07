@@ -885,6 +885,50 @@ app.post('/admin/import', upload.single('importFile'), async (req, res) => {
   }
 });
 
+// API สำหรับรับข้อมูล impact
+app.post('/impact', async (req, res) => {
+  // รับข้อมูลจาก request body
+  // ควรส่ง fleet_id, staff_id, severity, g_force, location, และ occurred_at (ถ้ามี)
+  const { fleet_id, staff_id, severity, g_force, location, occurred_at } = req.body;
+
+  // ตรวจสอบข้อมูลที่จำเป็น (ปรับเงื่อนไขตามที่ต้องการ)
+  if (!severity || !g_force) {
+    return res.status(400).json({ status: 'Error', message: 'Missing required fields: severity, g_force' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const insertQuery = `
+      INSERT INTO impact_log (
+        fleet_id,
+        staff_id,
+        severity,
+        g_force,
+        "location",
+        occurred_at,
+        created_at
+      )
+      VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW()), NOW())
+      RETURNING id
+    `;
+    const result = await client.query(insertQuery, [
+      fleet_id || null,
+      staff_id || null,
+      severity,
+      g_force,
+      location || null,
+      occurred_at || null
+    ]);
+
+    res.status(201).json({ status: 'OK', impact_id: result.rows[0].id });
+  } catch (error) {
+    console.error('Error inserting impact:', error);
+    res.status(500).json({ status: 'Error', message: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
 app.listen(8000, () => {
   console.log('app listening on port', 8000)
 })
