@@ -24,20 +24,32 @@ router.get('/', async (req, res) => {
   const client = await pool.connect();
   try {
     // รับค่ากรองจาก query string
-    const { fleet_id, staff_id, severity, start_date, end_date } = req.query;
+    let { fleet_id, staff_id, severity, start_date, end_date } = req.query;
+
+    // หากไม่มีการระบุวันที่ ให้กำหนดเป็นวันแรกและวันสุดท้ายของเดือนปัจจุบัน
+    const currentDate = new Date();
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    if (!start_date) {
+      start_date = firstDay.toISOString().split('T')[0];
+    }
+    if (!end_date) {
+      end_date = lastDay.toISOString().split('T')[0];
+    }
+
     let baseQuery = `
       SELECT
-        il.id AS impact_id,
+        ul.id AS impact_id,
         f.vehicle_name AS fleet_name,
         s.name AS staff_name,
-        il.severity,
-        il.g_force,
-        il."location" AS location,
-        TO_CHAR(il.occurred_at, 'YYYY-MM-DD HH24:MI:SS') AS occurred_at
-      FROM impact_log il
-      JOIN fleet f ON il.fleet_id = f.id
-      JOIN staff s ON il.staff_id = s.id
-      WHERE il.deleted_at IS NULL
+        ul.severity,
+        ul.g_force,
+        ul."location" AS location,
+        TO_CHAR(ul.occurred_at, 'YYYY-MM-DD HH24:MI:SS') AS occurred_at
+      FROM impact_log ul
+      JOIN fleet f ON ul.fleet_id = f.id
+      JOIN staff s ON ul.staff_id = s.id
+      WHERE ul.deleted_at IS NULL
     `;
     let params = [];
     let conditions = [];
@@ -51,22 +63,25 @@ router.get('/', async (req, res) => {
       params.push(staff_id);
     }
     if (severity) {
-      conditions.push(`il.severity ILIKE $${params.length + 1}`);
+      conditions.push(`ul.severity ILIKE $${params.length + 1}`);
       params.push(`%${severity}%`);
     }
+    // กรองด้วย start_date และ end_date
     if (start_date) {
-      conditions.push(`il.occurred_at >= $${params.length + 1}`);
+      conditions.push(`ul.occurred_at >= $${params.length + 1}`);
       params.push(start_date);
     }
     if (end_date) {
-      conditions.push(`il.occurred_at < ($${params.length + 1}::date + interval '1 day')`);
+      conditions.push(`ul.occurred_at < ($${params.length + 1}::date + interval '1 day')`);
       params.push(end_date);
     }
+
     if (conditions.length > 0) {
       baseQuery += " AND " + conditions.join(" AND ");
     }
-    baseQuery += " ORDER BY il.id DESC";
+    baseQuery += " ORDER BY ul.id DESC";
 
+    // รัน query
     const result = await client.query(baseQuery, params);
     const impacts = result.rows;
 
@@ -83,7 +98,6 @@ router.get('/', async (req, res) => {
       WHERE deleted_at IS NULL
       ORDER BY name
     `);
-    // สมมติ event severity options มี Low/Medium/High
     const severityOptions = ['Low', 'Medium', 'High'];
 
     res.render('impact_report', {
