@@ -888,16 +888,31 @@ app.post('/admin/import', upload.single('importFile'), async (req, res) => {
 // API สำหรับรับข้อมูล impact
 app.post('/impact', async (req, res) => {
   // รับข้อมูลจาก request body
-  // ควรส่ง fleet_id, staff_id, severity, g_force, location, และ occurred_at (ถ้ามี)
-  const { fleet_id, staff_id, severity, g_force, location, occurred_at } = req.body;
+  // ควรส่ง: device_id, staff_id, severity, g_force, location, occurred_at (ถ้ามี)
+  const { device_id, staff_id, severity, g_force, location, occurred_at } = req.body;
 
-  // ตรวจสอบข้อมูลที่จำเป็น (ปรับเงื่อนไขตามที่ต้องการ)
-  if (!severity || !g_force) {
-    return res.status(400).json({ status: 'Error', message: 'Missing required fields: severity, g_force' });
+  // ตรวจสอบข้อมูลที่จำเป็น: device_id, severity, g_force ต้องมี
+  if (!device_id || !severity || !g_force) {
+    return res.status(400).json({ status: 'Error', message: 'Missing required fields: device_id, severity, g_force' });
   }
 
   const client = await pool.connect();
   try {
+    // ดึง fleet_id จากตาราง fleet โดยใช้ device_id
+    const fleetQuery = `
+      SELECT id
+      FROM fleet
+      WHERE device_id = $1
+        AND deleted_at IS NULL
+      LIMIT 1
+    `;
+    const fleetResult = await client.query(fleetQuery, [device_id]);
+    if (fleetResult.rows.length === 0) {
+      return res.status(400).json({ status: 'Error', message: 'Invalid device_id or fleet not found' });
+    }
+    const fleet_id = fleetResult.rows[0].id;
+
+    // Insert ข้อมูลลงใน impact_log โดยใช้ fleet_id ที่ได้มา
     const insertQuery = `
       INSERT INTO impact_log (
         fleet_id,
@@ -905,14 +920,13 @@ app.post('/impact', async (req, res) => {
         severity,
         g_force,
         "location",
-        occurred_at,
-        created_at
+        occurred_at
       )
-      VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW()), NOW())
+      VALUES ($1, $2, $3, $4, $5, COALESCE($6, NOW()))
       RETURNING id
     `;
     const result = await client.query(insertQuery, [
-      fleet_id || null,
+      fleet_id,
       staff_id || null,
       severity,
       g_force,
